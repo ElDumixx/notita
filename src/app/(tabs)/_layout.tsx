@@ -25,11 +25,10 @@ const FLOATING: TabDef[] = [
 export default function TabsLayout() {
   const theme = useTheme();
   if (process.env.EXPO_OS === 'ios') return <IosTabs />;
-  // El fondo pastel va detrás de todo y se ve a través de la cabecera y de la barra flotante.
+  // El fondo pastel va detrás de todo y se ve (desenfocado en Android) a través de las barras.
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <GlassBackdrop />
-      <FloatingTabs tabs={FLOATING} />
+      <FloatingTabs tabs={FLOATING} backdrop={<GlassBackdrop />} />
     </View>
   );
 }

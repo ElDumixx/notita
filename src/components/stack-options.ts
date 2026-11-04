@@ -26,14 +26,7 @@ export function useTabStackOptions(): Options {
       contentStyle,
     } as Options;
   }
-  // Web: sin cabecera de la pila; cada pantalla pone su título grande (ScreenTitle), como en iOS.
-  if (process.env.EXPO_OS === 'web') return { headerShown: false, contentStyle } as Options;
-  return {
-    headerShadowVisible: false,
-    // Con el cristal, la cabecera deja ver el fondo pastel que pinta GlassBackdrop detrás.
-    headerStyle: { backgroundColor: glass.enabled ? 'transparent' : theme.bg },
-    headerTitleStyle: { color: theme.text, fontSize: 24, fontWeight: '700' },
-    headerTintColor: theme.tint,
-    contentStyle,
-  } as Options;
+  // Android y web: sin cabecera de la pila. Cada pantalla pone su título grande (ScreenTitle) y
+  // arriba flotan los botones de cristal, como en iOS.
+  return { headerShown: false, contentStyle } as Options;
 }

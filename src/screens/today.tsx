@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/empty-state';
 import { Icon } from '@/components/icon';
 import { ReminderRow } from '@/components/reminder-row';
 import { Group, SectionTitle, TEXT_INSET } from '@/components/ui';
+import { useHeaderScroll } from '@/components/screen-header';
 import { ScreenTitle } from '@/components/screen-title';
 import { useNow } from '@/hooks/use-now';
 import { READABLE_WIDTH, useResponsive } from '@/hooks/use-responsive';
@@ -79,6 +80,7 @@ export function TodayScreen() {
   const theme = useTheme();
   const now = useNow();
   const layout = useResponsive();
+  const headerScroll = useHeaderScroll();
   const reminders = useStore((s) => s.reminders);
   const notebooks = useStore((s) => s.notebooks);
 
@@ -115,6 +117,7 @@ export function TodayScreen() {
   return (
     <>
       <ScrollView
+        {...headerScroll}
         onLayout={layout.onLayout}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: layout.pad, paddingTop: 4, paddingBottom: 140, gap: 22 }}>

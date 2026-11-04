@@ -8,6 +8,7 @@ import { PostitPreview, WIDGET_SIZES } from '@/components/postit-preview';
 import { PressableScale } from '@/components/pressable-scale';
 import { AnniversaryWidgetPreview, SpikeWidgetPreview } from '@/components/special-widget-previews';
 import { Button, Group, Row, SectionTitle, TEXT_INSET } from '@/components/ui';
+import { useHeaderScroll } from '@/components/screen-header';
 import { ScreenTitle } from '@/components/screen-title';
 import { cellWidth, READABLE_WIDTH, useResponsive } from '@/hooks/use-responsive';
 import { canPinWidget, pinWidget } from '@/lib/pin-widget';
@@ -46,6 +47,7 @@ export function WidgetsScreen() {
   const theme = useTheme();
   const designs = useStore((s) => s.designs);
   const layout = useResponsive();
+  const headerScroll = useHeaderScroll();
   const columns = layout.columns;
   const cell = cellWidth(layout.inner, columns, GAP);
   const scale = cell / WIDGET_SIZES.small.w;
@@ -57,6 +59,7 @@ export function WidgetsScreen() {
   return (
     <>
       <ScrollView
+        {...headerScroll}
         onLayout={layout.onLayout}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: layout.pad, paddingTop: 4, paddingBottom: 140, gap: 24 }}>

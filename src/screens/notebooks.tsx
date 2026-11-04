@@ -8,6 +8,7 @@ import { Glass } from '@/components/glass';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { SectionTitle } from '@/components/ui';
+import { useHeaderScroll } from '@/components/screen-header';
 import { ScreenTitle } from '@/components/screen-title';
 import { cellWidth, useResponsive } from '@/hooks/use-responsive';
 import { formatDue } from '@/lib/dates';
@@ -97,6 +98,7 @@ const GAP = 12;
 
 export function NotebooksScreen() {
   const layout = useResponsive();
+  const headerScroll = useHeaderScroll();
   const inner = layout.inner;
   // Ancho exacto por celda: todas las columnas miden lo mismo (2 en móvil, 3–4 en tablet).
   const cell = cellWidth(inner, layout.columns, GAP);
@@ -122,10 +124,11 @@ export function NotebooksScreen() {
   return (
     <>
       <ScrollView
+        {...headerScroll}
         onLayout={layout.onLayout}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: layout.pad, paddingTop: 4, paddingBottom: 140 }}>
-        <ScreenTitle title="Libretas" />
+        <ScreenTitle title="Libretas" spacing={12} />
         <View style={{ gap: 24 }}>
           <View style={{ gap: GAP }}>
             {rows(SMART_LISTS, smartColumns).map((row, i) => (

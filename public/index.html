@@ -38,18 +38,34 @@
     </style>
     <style id="notita">
       /* Que se sienta como una app de iOS: sin rebotes de la página, sin resaltar al tocar y sin barras de scroll */
+      /* El fondo lo pone la app (use-web-chrome.web.ts); este es el de antes de que cargue. */
+      html {
+        background: #faf8f5;
+      }
+      body {
+        background: transparent;
+      }
       html,
       body {
-        background: #faf8f5;
         overscroll-behavior: none;
         -webkit-tap-highlight-color: transparent;
         -webkit-text-size-adjust: 100%;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
       }
       @media (prefers-color-scheme: dark) {
-        html,
-        body {
+        html {
           background: #121110;
+        }
+      }
+      /*
+       * App instalada en la pantalla de inicio del iPhone (fallo 301108 de WebKit en iOS 26): con la
+       * barra de estado transparente, iOS da a la página la altura de la pantalla menos la barra de
+       * estado, pero la dibuja desde arriba del todo, y abajo quedaba una franja vacía. Se estira la
+       * página lo que falta; el tope (100lvh) evita que se pase cuando Apple lo corrija.
+       */
+      @media (display-mode: standalone) {
+        html {
+          height: min(100lvh, calc(100% + env(safe-area-inset-top)));
         }
       }
       * {

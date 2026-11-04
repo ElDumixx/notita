@@ -8,6 +8,7 @@ import { Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native
 
 import { PressableScale } from '@/components/pressable-scale';
 import { Group, Row, SectionTitle, Segmented, TEXT_INSET, SWITCH_WEB } from '@/components/ui';
+import { useHeaderScroll } from '@/components/screen-header';
 import { ScreenTitle } from '@/components/screen-title';
 import { useResponsive } from '@/hooks/use-responsive';
 import { showAlert } from '@/lib/alert';
@@ -55,6 +56,7 @@ export function SettingsScreen() {
   const doneCount = useStore((s) => s.reminders.filter((r) => r.completedAt).length);
   const [permission, setPermission] = useState<PermissionState>('undetermined');
   const layout = useResponsive();
+  const headerScroll = useHeaderScroll();
 
   useFocusEffect(
     useCallback(() => {
@@ -289,6 +291,7 @@ export function SettingsScreen() {
 
   return (
     <ScrollView
+      {...headerScroll}
       onLayout={layout.onLayout}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ paddingHorizontal: layout.pad, paddingTop: 4, paddingBottom: 120 }}>

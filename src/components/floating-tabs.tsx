@@ -1,19 +1,20 @@
 import type { Href } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs, useTabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
-import { useEffect, useState } from 'react';
-import { Keyboard, Pressable, useWindowDimensions, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Keyboard, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { haptic } from '@/lib/haptics';
 import { useTheme } from '@/theme';
 import { useGlass } from '@/theme/glass';
-import { COLOR_FADE, EXIT, MOVE_SPRING, POP } from '@/theme/motion';
+import { COLOR_FADE, MOVE_SPRING } from '@/theme/motion';
 import { alpha } from '@/theme/palette';
 
 import { useReduceTransparency } from './glass';
+import { BlurScope, BlurTarget, GlassBlur, hasRealBlur } from './glass-blur';
 import { Icon, type IconName } from './icon';
-import { useTabBarAction } from './tab-bar-action';
+import { TopBar } from './top-bar';
 
 export type TabDef = { name: string; href: Href; label: string; icon: IconName };
 
@@ -59,8 +60,8 @@ function TabButton({ tab, isFocused, onPress, onLongPress, href }: ButtonProps) 
 }
 
 /**
- * Barra de pestañas flotante de cristal (Android y web), al estilo de la de iOS 26: una cápsula
- * con una «lente» que se desliza a la pestaña activa y, a la derecha, el botón "+" de la pantalla.
+ * Barra de pestañas flotante de cristal (Android y web), como la de iOS 26: una cápsula con una
+ * «lente» que se desliza a la pestaña activa. El "+" de cada pantalla va arriba, como en iOS.
  */
 function FloatingBar({ tabs }: { tabs: TabDef[] }) {
   const theme = useTheme();
@@ -68,9 +69,6 @@ function FloatingBar({ tabs }: { tabs: TabDef[] }) {
   const reduce = useReduceTransparency();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const registered = useTabBarAction();
-  // En la web el "+" va arriba, en la barra de navegación (como en iOS).
-  const action = process.env.EXPO_OS === 'web' ? null : registered;
   const keyboard = useKeyboardVisible();
   const { getTrigger } = useTabTrigger({ name: tabs[0].name });
   const [lastIndex, setLastIndex] = useState(0);
@@ -90,10 +88,10 @@ function FloatingBar({ tabs }: { tabs: TabDef[] }) {
 
   const margin = width < 600 ? 16 : 24;
   const glassy = g.enabled && !reduce;
-  // Siempre algo más opaca que las tarjetas: la barra flota sobre el contenido y debe leerse bien.
-  // En la web el navegador desenfoca lo de detrás; en Android no hay desenfoque, así que es más opaca.
+  // La barra flota sobre el contenido y debe leerse bien. Con desenfoque real (web y Android 12+)
+  // puede ser tan clara como la de iOS; sin él, es más opaca.
   const web = process.env.EXPO_OS === 'web';
-  const opacity = web ? Math.max(0.6, 0.86 - g.transparency * 0.3) : Math.max(0.84, 0.95 - g.transparency * 0.15);
+  const opacity = hasRealBlur ? Math.max(0.42, 0.66 - g.transparency * 0.26) : web ? Math.max(0.6, 0.86 - g.transparency * 0.3) : Math.max(0.84, 0.95 - g.transparency * 0.15);
   const fill = glassy ? alpha(theme.surface, opacity) : theme.surface;
   const surface = {
     height: TAB_BAR_HEIGHT,
@@ -113,7 +111,10 @@ function FloatingBar({ tabs }: { tabs: TabDef[] }) {
       pointerEvents="box-none"
       style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 10, paddingLeft: insets.left + margin, paddingRight: insets.right + margin, alignItems: 'center' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '100%', maxWidth: 560 }}>
-        <View accessibilityRole="tablist" style={[surface, { flex: 1, overflow: 'hidden', backgroundImage: glassy ? g.sheen : undefined }]}>
+        <View accessibilityRole="tablist" style={[surface, { flex: 1, overflow: 'hidden', backgroundColor: hasRealBlur && glassy ? 'transparent' : fill, borderWidth: 0 }]}>
+          {/* Desenfoque de lo de detrás, el tinte y el reflejo; el borde va encima de todo. */}
+          <GlassBlur radius={TAB_BAR_HEIGHT / 2} />
+          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: hasRealBlur && glassy ? fill : undefined, backgroundImage: glassy ? g.sheen : undefined }]} />
           <View style={{ flex: 1, flexDirection: 'row' }} onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}>
             {itemWidth > 0 ? (
               <Animated.View
@@ -130,48 +131,34 @@ function FloatingBar({ tabs }: { tabs: TabDef[] }) {
               </TabTrigger>
             ))}
           </View>
+          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: TAB_BAR_HEIGHT / 2, borderWidth: 1, borderColor: surface.borderColor }]} />
         </View>
-        {action ? (
-          <Animated.View key={action.key} entering={POP} exiting={EXIT}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={action.label}
-              onPress={() => {
-                haptic.tap();
-                action.run();
-              }}
-              style={({ pressed }) => [
-                surface,
-                {
-                  width: TAB_BAR_HEIGHT,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: alpha(theme.tint, pressed ? 0.8 : 0.94),
-                  borderColor: 'rgba(255,255,255,0.35)',
-                  boxShadow: `0 10px 26px ${theme.scheme === 'dark' ? 'rgba(0,0,0,0.5)' : alpha(theme.tint, 0.4)}`,
-                  transform: [{ scale: pressed ? 0.94 : 1 }],
-                },
-              ]}>
-              <Icon name="add" size={28} color={theme.onTint} weight="semibold" />
-            </Pressable>
-          </Animated.View>
-        ) : null}
       </View>
     </View>
   );
 }
 
-/** Pestañas con la barra flotante. Las rutas son las mismas que usan las pestañas nativas de iOS. */
-export function FloatingTabs({ tabs }: { tabs: TabDef[] }) {
+/**
+ * Pestañas con la barra flotante. Las rutas son las mismas que usan las pestañas nativas de iOS.
+ * En Android, la barra de pestañas y la de arriba desenfocan el fondo y las pantallas que pasan por
+ * debajo; en la web eso lo hace el navegador y cada pantalla pone su propia barra de arriba.
+ */
+export function FloatingTabs({ tabs, backdrop }: { tabs: TabDef[]; backdrop?: ReactNode }) {
   return (
-    <Tabs style={{ flex: 1 }}>
-      <TabSlot style={{ flex: 1 }} />
-      <FloatingBar tabs={tabs} />
-      <TabList style={{ display: 'none' }}>
-        {tabs.map((t) => (
-          <TabTrigger key={t.name} name={t.name} href={t.href} />
-        ))}
-      </TabList>
-    </Tabs>
+    <BlurScope>
+      <Tabs style={{ flex: 1 }}>
+        <BlurTarget style={{ flex: 1 }}>
+          {backdrop}
+          <TabSlot style={{ flex: 1 }} />
+        </BlurTarget>
+        {process.env.EXPO_OS === 'android' ? <TopBar /> : null}
+        <FloatingBar tabs={tabs} />
+        <TabList style={{ display: 'none' }}>
+          {tabs.map((t) => (
+            <TabTrigger key={t.name} name={t.name} href={t.href} />
+          ))}
+        </TabList>
+      </Tabs>
+    </BlurScope>
   );
 }

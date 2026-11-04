@@ -7,7 +7,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { canUseGlass } from '@/components/glass';
 import { UndoToast } from '@/components/undo-toast';
+import { WebSafeArea } from '@/components/web-safe-area';
 import { rootScreenLayout } from '@/components/web-sheet';
+import { useWebChrome } from '@/hooks/use-web-chrome';
 import { useWebFonts } from '@/hooks/use-web-fonts';
 import { configureNotifications, useNotificationNavigation } from '@/lib/notifications';
 import { startSync } from '@/lib/sync';
@@ -45,6 +47,7 @@ export default function RootLayout() {
 
   // En iOS 26 las hojas con fondo transparente usan Liquid Glass; en el resto, el fondo en malla.
   const glass = useGlass();
+  useWebChrome(theme, glass.enabled);
   const sheetStyle = canUseGlass
     ? { backgroundColor: 'transparent' }
     : { backgroundColor: theme.bg, backgroundImage: glass.enabled ? meshBackground(theme) : undefined };
@@ -56,29 +59,31 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ThemeProvider value={navTheme}>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.bg } }} screenLayout={rootScreenLayout}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="reminder/[id]"
-            options={sheet([0.7, 1])}
-          />
-          <Stack.Screen
-            name="notebook/[id]"
-            options={sheet([0.75, 1])}
-          />
-          <Stack.Screen
-            name="anniversary/[id]"
-            options={sheet([0.8, 1])}
-          />
-          <Stack.Screen
-            name="design/[id]"
-            options={sheet([1])}
-          />
-        </Stack>
-        <UndoToast />
-        <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
-      </ThemeProvider>
+      <WebSafeArea>
+        <ThemeProvider value={navTheme}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.bg } }} screenLayout={rootScreenLayout}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="reminder/[id]"
+              options={sheet([0.7, 1])}
+            />
+            <Stack.Screen
+              name="notebook/[id]"
+              options={sheet([0.75, 1])}
+            />
+            <Stack.Screen
+              name="anniversary/[id]"
+              options={sheet([0.8, 1])}
+            />
+            <Stack.Screen
+              name="design/[id]"
+              options={sheet([1])}
+            />
+          </Stack>
+          <UndoToast />
+          <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
+        </ThemeProvider>
+      </WebSafeArea>
     </GestureHandlerRootView>
   );
 }

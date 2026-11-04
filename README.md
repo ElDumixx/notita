@@ -50,10 +50,10 @@ App de recordatorios para **iOS, iPadOS, Android** (móvil y tablet) y **web** c
 - **Icono cambiable**: Original, Oscuro, Cristal, Minimal, Rosa, Menta, Lavanda y Cielo. El Original de iOS está hecho con Icon Composer, así que además se adapta solo a los modos Oscuro, Traslúcido y Tintado del sistema. En Android incluye icono monocromo para los iconos temáticos.
 - **Estilo cristal** (Ajustes → Apariencia), activado por defecto:
   - iOS 26+: tarjetas, listas, botones y hojas con el Liquid Glass del sistema.
-  - Android: superficies translúcidas con borde de luz y brillo suave, más transparentes que en iOS; el fondo pastel se ve de arriba abajo, también a través de la cabecera y de la barra de pestañas.
+  - Android: superficies translúcidas con borde de luz y brillo suave; la barra de pestañas y los botones de arriba **desenfocan de verdad** lo que pasa por detrás (Android 12 o superior), como el cristal de iOS. El Liquid Glass nativo es de Apple y no existe en Android: esto es lo más parecido.
   - En los dos, un fondo pastel en degradado detrás del cristal para que se note la transparencia.
   - **Transparencia** ajustable con un deslizador, de «Más opaco» a «Más transparente». Se puede desactivar del todo, y en iOS respeta «Reducir transparencia».
-- **Menú flotante en Android**: la barra de pestañas es una cápsula de cristal que flota sobre el contenido, con una «lente» que se desliza a la pestaña activa y, a su derecha, el botón **+** de cada pantalla (como la barra de iOS 26).
+- **Android con el diseño de iPhone**: título grande que se encoge al hacer scroll (y aparece una barra de cristal con el título pequeño), botones redondos de cristal arriba (**+** y volver) y la barra de pestañas como cápsula flotante con una «lente» que se desliza a la pestaña activa, igual que en iOS 26.
 - Tema claro/oscuro/sistema y vibración opcional.
 - **Animaciones discretas**, siempre con un motivo: al marcar una tarea la casilla se rellena y la tarea se va un instante después, la barra de progreso se pone verde al terminar el día, el control segmentado desliza su pastilla, los botones ceden un poco al pulsarlos y el pósit de las pantallas vacías «respira». En iOS usan muelles suaves como los del sistema; en **Android son más sobrias** (sin rebotes, más cortas y con la curva estándar de Material 3). Todas respetan «Reducir movimiento».
 
@@ -63,10 +63,10 @@ App de recordatorios para **iOS, iPadOS, Android** (móvil y tablet) y **web** c
 
 ### APK de Android
 
-Descarga `Notita-1.2.0.apk` de [Releases](https://github.com/ElDumixx/notita/releases/latest) (firmado con la clave de depuración, válido para instalar y probar; no para Google Play). Ábrelo en el móvil (permite «instalar apps desconocidas» si lo pide), o con el móvil conectado:
+Descarga `Notita-1.3.0.apk` de [Releases](https://github.com/ElDumixx/notita/releases/latest) (firmado con la clave de depuración, válido para instalar y probar; no para Google Play). Ábrelo en el móvil (permite «instalar apps desconocidas» si lo pide), o con el móvil conectado:
 
 ```bash
-adb install Notita-1.2.0.apk
+adb install Notita-1.3.0.apk
 ```
 
 ### Versión web (iPhone con Safari)
@@ -75,7 +75,9 @@ La misma app, con el mismo diseño de iOS (títulos grandes, barra de pestañas 
 
 1. Ábrela en **Safari** en el iPhone.
 2. Toca **Compartir** → **«Añadir a pantalla de inicio»**.
-3. Ábrela desde su icono: va a pantalla completa, sin barras de Safari.
+3. Ábrela desde su icono: va a pantalla completa, sin barras de Safari. (En Safari normal, la barra de Safari ocupa la parte de abajo; eso no lo puede quitar ninguna web.)
+
+Con la app en la pantalla de inicio, iOS 26 tiene un fallo (WebKit 301108) que deja una franja vacía abajo; la web lo corrige estirando la página hasta el borde real de la pantalla.
 
 Limitaciones de la web (las pone iOS, no la app): **no hay avisos** con la app cerrada ni **widgets**, y los datos se guardan en ese navegador (no se comparten con la app de iOS o Android). Las apps web de iOS van en la **pantalla de inicio**, no en la de bloqueo; los widgets de la pantalla de bloqueo son de la app nativa de iOS. Los iconos de la web son Material Symbols, porque los SF Symbols de Apple no se pueden usar fuera de sus sistemas.
 

@@ -10,6 +10,7 @@ import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ReminderRow } from '@/components/reminder-row';
 import { Group, SectionTitle } from '@/components/ui';
+import { useHeaderScroll } from '@/components/screen-header';
 import { ScreenTitle } from '@/components/screen-title';
 import { useResponsive } from '@/hooks/use-responsive';
 import { showAlert } from '@/lib/alert';
@@ -40,6 +41,7 @@ export function NotebookDetailScreen({ id }: { id: string }) {
   const clearCompleted = useStore((s) => s.clearCompleted);
   const [showDone, setShowDone] = useState(false);
   const layout = useResponsive();
+  const headerScroll = useHeaderScroll();
 
   const smart = isSmartList(id) ? SMART_LISTS.find((l) => l.key === id) : undefined;
   const notebook = notebooks.find((n) => n.id === id);
@@ -85,6 +87,7 @@ export function NotebookDetailScreen({ id }: { id: string }) {
     <>
       <Stack.Screen options={{ title }} />
       <ScrollView
+        {...headerScroll}
         onLayout={layout.onLayout}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: layout.pad, paddingTop: 8, paddingBottom: 140 }}>

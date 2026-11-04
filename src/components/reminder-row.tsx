@@ -1,8 +1,7 @@
 import { Link, router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { showAlert } from '@/lib/alert';
 import { addDays, formatDue, isOverdue, startOfDay } from '@/lib/dates';
@@ -16,6 +15,7 @@ import { PASTELS } from '@/theme/palette';
 import { Checkbox } from './checkbox';
 import { useGlassActive } from './glass';
 import { Icon } from './icon';
+import { SwipeToDelete } from './swipe-to-delete';
 
 type Props = {
   reminder: Reminder;
@@ -28,30 +28,11 @@ type Props = {
   projected?: boolean;
 };
 
-const ACTION_WIDTH = 84;
-
-function DeleteAction({ drag, color, bg }: { drag: SharedValue<number>; color: string; bg: string }) {
-  const fade = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.abs(drag.get()) / (ACTION_WIDTH * 0.5)) }));
-  const style = useAnimatedStyle(() => {
-    const p = Math.min(1, Math.abs(drag.get()) / ACTION_WIDTH);
-    return { transform: [{ scale: 0.7 + p * 0.3 }] };
-  });
-  return (
-    <Animated.View style={[{ flex: 1, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }, fade]}>
-      <Animated.View style={[{ alignItems: 'center', gap: 2 }, style]}>
-        <Icon name="trash" size={20} color={color} />
-        <Text style={{ color, fontSize: 12, fontWeight: '600' }}>Eliminar</Text>
-      </Animated.View>
-    </Animated.View>
-  );
-}
-
 export function ReminderRow({ reminder: r, notebook, showNotebook = true, isLast, when, projected }: Props) {
   const theme = useTheme();
   const glass = useGlassActive();
   // Sobre cristal la fila es transparente; en modo sólido, opaca como la tarjeta.
   const rowBg = glass ? 'transparent' : theme.surface;
-  const swipe = useRef<SwipeableMethods>(null);
   const toggleComplete = useStore((s) => s.toggleComplete);
   const deleteReminders = useStore((s) => s.deleteReminders);
   const updateReminder = useStore((s) => s.updateReminder);
@@ -97,14 +78,18 @@ export function ReminderRow({ reminder: r, notebook, showNotebook = true, isLast
     if (when) meta.push(when);
   } else if (r.dueAt != null) meta.push(formatDue(r.dueAt, r.hasTime));
 
+  // Los diálogos de Android solo muestran tres botones; se cierra tocando fuera. «Importante» está en el editor.
   const androidMenu = () =>
-    showAlert(r.title, undefined, [
-      { text: done ? 'Marcar pendiente' : 'Marcar como hecho', onPress: toggle },
-      { text: 'Pasar a mañana', onPress: postpone },
-      { text: r.important ? 'Quitar importante' : 'Marcar importante', onPress: () => updateReminder(r.id, { important: !r.important }) },
-      { text: 'Eliminar', style: 'destructive', onPress: remove },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
+    showAlert(
+      r.title,
+      undefined,
+      [
+        { text: 'Pasar a mañana', onPress: postpone },
+        { text: 'Eliminar', style: 'destructive', onPress: remove },
+        { text: done ? 'Marcar pendiente' : 'Marcar como hecho', onPress: toggle },
+      ],
+      { cancelable: true }
+    );
 
   // El estilo va en un View interior: el Link de iOS sustituye el estilo del Pressable que envuelve.
   const content = (
@@ -155,18 +140,7 @@ export function ReminderRow({ reminder: r, notebook, showNotebook = true, isLast
 
   return (
     <Animated.View entering={ENTER} exiting={EXIT} layout={LAYOUT}>
-      <ReanimatedSwipeable
-        ref={swipe}
-        enabled={!projected}
-        friction={1.6}
-        rightThreshold={ACTION_WIDTH * 0.9}
-        overshootRight={false}
-        renderRightActions={(_p, drag) => (
-          <Pressable onPress={remove} accessibilityLabel="Eliminar recordatorio" style={{ width: ACTION_WIDTH, height: '100%' }}>
-            <DeleteAction drag={drag} color={theme.danger} bg={theme.dangerSoft} />
-          </Pressable>
-        )}
-        onSwipeableOpen={() => remove()}>
+      <SwipeToDelete enabled={!projected} onDelete={remove}>
         {process.env.EXPO_OS === 'ios' && projected ? (
           <Link href={`/reminder/${r.id}`} asChild>
             {content}
@@ -184,7 +158,7 @@ export function ReminderRow({ reminder: r, notebook, showNotebook = true, isLast
         ) : (
           content
         )}
-      </ReanimatedSwipeable>
+      </SwipeToDelete>
       {!isLast ? <View style={{ height: 1, backgroundColor: theme.separator, marginLeft: 50 }} /> : null}
     </Animated.View>
   );

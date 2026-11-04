@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/empty-state';
 import { MonthCalendar } from '@/components/month-calendar';
 import { ReminderRow } from '@/components/reminder-row';
 import { Button, Group, SectionTitle, Segmented, TEXT_INSET } from '@/components/ui';
+import { useHeaderScroll } from '@/components/screen-header';
 import { ScreenTitle } from '@/components/screen-title';
 import { useNow } from '@/hooks/use-now';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -117,6 +118,7 @@ export function CalendarScreen() {
   const now = useNow();
   const today = startOfDay(now);
   const layout = useResponsive();
+  const headerScroll = useHeaderScroll();
   const reminders = useStore((s) => s.reminders);
   const notebooks = useStore((s) => s.notebooks);
   const anniversaries = useStore((s) => s.anniversaries);
@@ -213,6 +215,7 @@ export function CalendarScreen() {
   return (
     <>
       <ScrollView
+        {...headerScroll}
         onLayout={layout.onLayout}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: layout.pad, paddingTop: 4, paddingBottom: 140, gap: 20 }}>
