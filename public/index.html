@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover: la app ocupa toda la pantalla y respeta la isla y el indicador de inicio -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>%WEB_TITLE%</title>
+
+    <!-- App web instalable: en Safari, Compartir → «Añadir a pantalla de inicio» -->
+    <link rel="manifest" href="/notita/manifest.json" />
+    <link rel="apple-touch-icon" href="/notita/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Notita" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF8F5" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121110" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+    <style id="notita">
+      /* Que se sienta como una app de iOS: sin rebotes de la página, sin resaltar al tocar y sin barras de scroll */
+      html,
+      body {
+        background: #faf8f5;
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background: #121110;
+        }
+      }
+      * {
+        scrollbar-width: none;
+      }
+      *::-webkit-scrollbar {
+        display: none;
+      }
+      body {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
+      input,
+      textarea,
+      [contenteditable] {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>Activa JavaScript para usar Notita.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

@@ -1,0 +1,236 @@
+{
+  "expo": {
+    "name": "Notita",
+    "slug": "notita",
+    "version": "1.2.0",
+    "orientation": "default",
+    "icon": "./assets/icons/ios/original.png",
+    "scheme": "notita",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.paulbumb.notita",
+      "icon": "./assets/notita.icon",
+      "supportsTablet": true,
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.paulbumb.notita"
+        ]
+      },
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "es",
+        "CFBundleLocalizations": [
+          "es"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "3"
+    },
+    "android": {
+      "package": "com.paulbumb.notita",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/android/original-foreground.png",
+        "backgroundImage": "./assets/icons/android/background.png",
+        "monochromeImage": "./assets/icons/android/monochrome.png",
+        "backgroundColor": "#E9E5FF"
+      },
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ],
+      "softwareKeyboardLayoutMode": "resize",
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 3
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "output": "single",
+      "name": "Notita",
+      "shortName": "Notita",
+      "lang": "es",
+      "description": "Recordatorios en pósits, libretas, calendario y aniversarios.",
+      "themeColor": "#FAF8F5",
+      "backgroundColor": "#FAF8F5"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 110,
+          "backgroundColor": "#FAF8F5",
+          "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#121110"
+          }
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/ComicNeue-Regular.ttf",
+            "./assets/fonts/ComicNeue-Bold.ttf",
+            "./assets/fonts/Caveat-Medium.ttf",
+            "./assets/fonts/Caveat-Bold.ttf",
+            "./assets/fonts/Nunito-Medium.ttf",
+            "./assets/fonts/Nunito-ExtraBold.ttf",
+            "./assets/fonts/Lora-Medium.ttf",
+            "./assets/fonts/Lora-Bold.ttf",
+            "./assets/fonts/CourierPrime-Regular.ttf",
+            "./assets/fonts/CourierPrime-Bold.ttf",
+            "./assets/fonts/PermanentMarker-Regular.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icons/android/notification-icon.png",
+          "color": "#8C7CF0"
+        }
+      ],
+      "expo-sqlite",
+      "@bacons/apple-targets",
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./assets/fonts/ComicNeue-Regular.ttf",
+            "./assets/fonts/ComicNeue-Bold.ttf",
+            "./assets/fonts/Caveat-Medium.ttf",
+            "./assets/fonts/Caveat-Bold.ttf",
+            "./assets/fonts/Nunito-Medium.ttf",
+            "./assets/fonts/Nunito-ExtraBold.ttf",
+            "./assets/fonts/Lora-Medium.ttf",
+            "./assets/fonts/Lora-Bold.ttf",
+            "./assets/fonts/CourierPrime-Regular.ttf",
+            "./assets/fonts/CourierPrime-Bold.ttf",
+            "./assets/fonts/PermanentMarker-Regular.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "Postit",
+              "label": "Pósit de Notita",
+              "description": "Tus recordatorios en un pósit a tu gusto",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "520dp",
+              "maxResizeHeight": "520dp",
+              "resizeMode": "horizontal|vertical",
+              "widgetFeatures": "reconfigurable",
+              "previewImage": "./assets/images/widget-preview.png",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "Aniversarios",
+              "label": "Aniversarios de Notita",
+              "description": "Cuenta atrás para cumpleaños y aniversarios, con globos y confeti",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "520dp",
+              "maxResizeHeight": "520dp",
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/widget-aniversarios.png",
+              "updatePeriodMillis": 3600000
+            },
+            {
+              "name": "Importantes",
+              "label": "Importantes de Notita",
+              "description": "Tus recordatorios importantes clavados en una aguja",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "520dp",
+              "maxResizeHeight": "520dp",
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/widget-importantes.png",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ],
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "Oscuro",
+            "ios": "./assets/icons/ios/oscuro.png",
+            "android": {
+              "foregroundImage": "./assets/icons/android/oscuro-foreground.png",
+              "backgroundColor": "#1C1B24"
+            }
+          },
+          {
+            "name": "Cristal",
+            "ios": "./assets/icons/ios/cristal.png",
+            "android": {
+              "foregroundImage": "./assets/icons/android/cristal-foreground.png",
+              "backgroundColor": "#E6EBF2"
+            }
+          },
+          {
+            "name": "Minimal",
+            "ios": "./assets/icons/ios/minimal.png",
+            "android": {
+              "foregroundImage": "./assets/icons/android/minimal-foreground.png",
+              "backgroundColor": "#FFFFFF"
+            }
+          },
+          {
+            "name": "Rosa",
+            "ios": "./assets/icons/ios/rosa.png",
+            "android": {
+              "foregroundImage": "./assets/icons/android/rosa-foreground.png",
+              "backgroundColor": "#FFEDE6"
+            }
+          },
+          {
+            "name": "Menta",
+            "ios": "./assets/icons/ios/menta.png",
+            "android": {
+              "foregroundImage": "./assets/icons/android/menta-foreground.png",
+              "backgroundColor": "#E8F6EE"
+            }
+          },
+          {
+            "name": "Lavanda",
+            "ios": "./assets/icons/ios/lavanda.png",
+            "android": {
+              "foregroundImage": "./assets/icons/android/lavanda-foreground.png",
+              "backgroundColor": "#FFF4D9"
+            }
+          },
+          {
+            "name": "Cielo",
+            "ios": "./assets/icons/ios/cielo.png",
+            "android": {
+              "foregroundImage": "./assets/icons/android/cielo-foreground.png",
+              "backgroundColor": "#FFEEE0"
+            }
+          }
+        ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true,
+      "baseUrl": "/notita"
+    }
+  }
+}

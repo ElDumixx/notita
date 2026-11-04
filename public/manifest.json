@@ -1,0 +1,17 @@
+{
+  "name": "Notita",
+  "short_name": "Notita",
+  "description": "Recordatorios en pósits, libretas, calendario y aniversarios.",
+  "lang": "es",
+  "start_url": "/notita/",
+  "scope": "/notita/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#FAF8F5",
+  "background_color": "#FAF8F5",
+  "icons": [
+    { "src": "/notita/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/notita/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/notita/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
