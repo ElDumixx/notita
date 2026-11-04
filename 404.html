@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover: la app ocupa toda la pantalla y respeta la isla y el indicador de inicio -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>Notita</title>
+
+    <!-- App web instalable: en Safari, Compartir → «Añadir a pantalla de inicio» -->
+    <link rel="manifest" href="/notita/manifest.json" />
+    <link rel="apple-touch-icon" href="/notita/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Notita" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAF8F5" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121110" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+    <style id="notita">
+      /* Que se sienta como una app de iOS: sin rebotes de la página, sin resaltar al tocar y sin barras de scroll */
+      /* El fondo lo pone la app (use-web-chrome.web.ts); este es el de antes de que cargue. */
+      html {
+        background: #faf8f5;
+      }
+      body {
+        background: transparent;
+      }
+      html,
+      body {
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        html {
+          background: #121110;
+        }
+      }
+      /*
+       * App instalada en la pantalla de inicio del iPhone (fallo 301108 de WebKit en iOS 26): con la
+       * barra de estado transparente, iOS da a la página la altura de la pantalla menos la barra de
+       * estado, pero la dibuja desde arriba del todo, y abajo quedaba una franja vacía. Se estira la
+       * página lo que falta; el tope (100lvh) evita que se pase cuando Apple lo corrija.
+       */
+      @media (display-mode: standalone) {
+        html {
+          height: min(100lvh, calc(100% + env(safe-area-inset-top)));
+        }
+      }
+      * {
+        scrollbar-width: none;
+      }
+      *::-webkit-scrollbar {
+        display: none;
+      }
+      body {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
+      input,
+      textarea,
+      [contenteditable] {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+      }
+    </style>
+  <meta name="theme-color" content="#FAF8F5">
+<meta name="description" content="Recordatorios en pósits, libretas, calendario y aniversarios.">
+<link rel="icon" href="/notita/favicon.ico"/><link rel="preload" href="/notita/_expo/static/css/native-tabs.module-78b0f59737571f455720970791a36bdd.css" as="style">
+<link rel="stylesheet" href="/notita/_expo/static/css/native-tabs.module-78b0f59737571f455720970791a36bdd.css"></head>
+
+  <body>
+    <noscript>Activa JavaScript para usar Notita.</noscript>
+    <div id="root"></div>
+  <script src="/notita/_expo/static/js/web/__expo-metro-runtime-ed4c1cfa6193d76fc294130e42bd1916.js" defer></script><script src="/notita/_expo/static/js/web/__common-258d8f8f7ee23f4723bb708f8508048c.js" defer></script><script src="/notita/_expo/static/js/web/index-88405844729f3c0bdac676c491ccd184.js" defer></script>
+</body>
+</html>
