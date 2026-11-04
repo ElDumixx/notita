@@ -37,7 +37,7 @@ App de recordatorios para **iOS, iPadOS, Android** (móvil y tablet) y **web** c
 - **Tablets (iPad y Android)**: las pantallas se reorganizan según el espacio. Hoy pasa a dos columnas, Libretas y Widgets a 3–4 columnas, el calendario muestra el mes y el día seleccionado lado a lado, y las listas y formularios se centran con un ancho cómodo de leer. Funciona en vertical, horizontal, Split View y Stage Manager; en iPad la barra de pestañas puede pasar a barra lateral, y el widget de iOS tiene tamaño extra grande.
 - **Eliminar de verdad**: deslizar a la izquierda, mantener pulsado (menú), botón en el editor, "Borrar hechos" por libreta o en Ajustes, y eliminar libretas enteras (o mover sus recordatorios). Siempre con **Deshacer** durante 7 segundos.
 - **Notificaciones sin agobiar**: un único aviso por recordatorio (a la hora o 15 min / 1 h / 1 día antes), sin repeticiones; los avisos que coinciden en 10 minutos se juntan en uno; **silencio nocturno** (los avisos esperan a la mañana, salvo los importantes); resumen de la mañana opcional (solo si hay algo). Desde el aviso: **Hecho** o **Posponer 10 min**. El permiso se pide solo al crear el primer aviso.
-- **Widget «Importantes»** (iOS y Android): los recordatorios marcados como importantes, **clavados en una aguja** como en un pincho de notas. Delante está el que toca y detrás asoman los siguientes, cada uno girado a su manera. Al tocar el círculo se marca como hecho, sale de la aguja y aparece el siguiente; si no queda ninguno, la aguja se queda vacía con «No hay recordatorios importantes».
+- **Widget «Importantes»** (iOS y Android): los recordatorios marcados como importantes, **clavados en una aguja** como en un pincho de notas. Delante está el que toca y detrás asoman los siguientes, cada uno girado a su manera y **con el color de su libreta** (amarillo Personal, azul Trabajo, verde Compras…). Al tocar el círculo se marca como hecho, sale de la aguja y aparece el siguiente; si no queda ninguno, **solo queda la aguja**. Se personaliza como el pósit, con sus propios diseños en la pestaña Widgets: fondo (mesa, pastel, cristal u oscuro), forma, papel, color (el de cada libreta o uno fijo), tinta, letra y si muestra la libreta y la fecha. Cada widget elige su aguja (iOS: mantener pulsado → Editar widget; Android: mantener pulsado → personalizar).
 - **Widget «Aniversarios»** (iOS y Android): diseño de cumpleaños con **globos, banderines y confeti** y la cuenta atrás de la próxima fecha («🎂 En 3 días · Ana · Cumple 31 años»). En mediano y grande, la lista de las siguientes. En iOS también para la pantalla de bloqueo.
 - **Widgets tipo pósit** (pequeño, mediano y grande en iOS; redimensionable en Android) creados en la pestaña Widgets:
   - Qué muestra: Hoy, Próximos, Importantes, Todo o una libreta concreta.
@@ -63,10 +63,10 @@ App de recordatorios para **iOS, iPadOS, Android** (móvil y tablet) y **web** c
 
 ### APK de Android
 
-Descarga `Notita-1.3.0.apk` de [Releases](https://github.com/ElDumixx/notita/releases/latest) (firmado con la clave de depuración, válido para instalar y probar; no para Google Play). Ábrelo en el móvil (permite «instalar apps desconocidas» si lo pide), o con el móvil conectado:
+Descarga `Notita-1.4.0.apk` de [Releases](https://github.com/ElDumixx/notita/releases/latest) (firmado con la clave de depuración, válido para instalar y probar; no para Google Play). Ábrelo en el móvil (permite «instalar apps desconocidas» si lo pide), o con el móvil conectado:
 
 ```bash
-adb install Notita-1.3.0.apk
+adb install Notita-1.4.0.apk
 ```
 
 ### Versión web (iPhone con Safari)

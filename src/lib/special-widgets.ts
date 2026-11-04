@@ -1,8 +1,8 @@
 /** Contenido de los widgets «Aniversarios» e «Importantes» (app, Android e iOS usan lo mismo). */
 import type { State } from '@/store';
 import { byDue, isPending } from '@/store/selectors';
-import type { AnniversaryKind } from '@/store/types';
-import { PASTELS, type PastelKey } from '@/theme/palette';
+import type { AnniversaryKind, WidgetDesign } from '@/store/types';
+import { INKS, PASTELS, paperFor, type PastelKey } from '@/theme/palette';
 
 import { countdown, daysUntil, KINDS, shortCountdown, upcoming, yearsLabel } from './anniversaries';
 import { dayDiff } from './dates';
@@ -55,15 +55,21 @@ export type ImportantItem = SpikeNote & {
   ink: string;
 };
 
-/** Recordatorios importantes pendientes, en orden: el primero es el pósit de delante. */
-export function importantItems(state: Pick<State, 'reminders' | 'notebooks'>, now = Date.now()): ImportantItem[] {
+/**
+ * Recordatorios importantes pendientes, en orden: el primero es el pósit de delante. Con el color
+ * «Libreta» del diseño cada pósit lleva el de su libreta (así se distinguen en la aguja); con un
+ * color fijo, todos ese. La tinta elegida en el diseño manda sobre la del papel.
+ */
+export function importantItems(state: Pick<State, 'reminders' | 'notebooks'>, design: Pick<WidgetDesign, 'color' | 'ink'>, now = Date.now()): ImportantItem[] {
+  const fixed = design.color === 'auto' ? null : paperFor(design.color);
+  const ink = INKS[design.ink].color;
   const notebooks = new Map(state.notebooks.map((n) => [n.id, n]));
   return state.reminders
     .filter((r) => isPending(r) && r.important)
     .sort(byDue)
     .map((r) => {
       const nb = notebooks.get(r.notebookId);
-      const p = PASTELS[nb?.color ?? 'limon'];
+      const p = fixed ?? PASTELS[nb?.color ?? 'limon'];
       return {
         id: r.id,
         title: r.title,
@@ -73,10 +79,13 @@ export function importantItems(state: Pick<State, 'reminders' | 'notebooks'>, no
         overdue: r.dueAt != null && dayDiff(r.dueAt, now) < 0,
         paper: p.paper,
         fold: p.fold,
-        ink: p.ink,
+        line: p.line,
+        strong: p.strong,
+        ink: ink ?? p.ink,
       };
     });
 }
 
+/** Solo para el widget de la pantalla de bloqueo de iOS: en los demás, la aguja vacía lo dice todo. */
 export const EMPTY_IMPORTANT = 'No hay recordatorios importantes';
 export const EMPTY_ANNIVERSARIES = { title: 'Sin fechas especiales', hint: 'Añade cumpleaños y aniversarios en el Calendario de Notita.' };

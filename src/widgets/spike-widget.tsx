@@ -3,26 +3,28 @@
 
 import { FlexWidget, OverlapWidget, SvgWidget, TextWidget, type HexColor } from 'react-native-android-widget';
 
-import { EMPTY_IMPORTANT, importantItems } from '@/lib/special-widgets';
-import { spikeArt } from '@/lib/spike-art';
+import { importantItems } from '@/lib/special-widgets';
+import { spikeArt, spikeTitleLines, spikeTitleSize } from '@/lib/spike-art';
 import type { State } from '@/store';
+import type { WidgetDesign } from '@/store/types';
+import { FONTS } from '@/theme/fonts';
 import { alpha } from '@/theme/palette';
 
 const hex = (c: string) => c as HexColor;
 
-type Props = { state: Pick<State, 'reminders' | 'notebooks'>; width: number; height: number };
+type Props = { design: WidgetDesign; state: Pick<State, 'reminders' | 'notebooks'>; width: number; height: number };
 
 /**
- * Widget de Android «Importantes»: pósits clavados en una aguja. Al tocar el círculo, el de
- * delante se marca como hecho, sale de la aguja y aparece el siguiente.
+ * Widget de Android «Importantes»: pósits clavados en una aguja, con el diseño elegido. Al tocar
+ * el círculo, el de delante se marca como hecho, sale de la aguja y aparece el siguiente. Sin
+ * importantes queda solo la aguja.
  */
-export function SpikeWidget({ state, width, height }: Props) {
-  const items = importantItems(state);
-  const L = spikeArt(width, height, items, { radius: 24 });
+export function SpikeWidget({ design, state, width, height }: Props) {
+  const items = importantItems(state, design);
+  const font = FONTS[design.font];
+  const titleSize = spikeTitleSize(width, height, font.scale);
+  const L = spikeArt(width, height, items, design, { radius: 24, titleSize });
   const first = items[0];
-  const wide = width > height * 1.5;
-  const large = !wide && width > 250 && height > 250;
-  const titleSize = large ? 28 : wide ? 22 : 19;
   const pad = (r: { x: number; y: number; w: number; h: number }) => ({
     paddingLeft: r.x,
     paddingTop: r.y,
@@ -34,13 +36,7 @@ export function SpikeWidget({ state, width, height }: Props) {
     <OverlapWidget style={{ height: 'match_parent', width: 'match_parent' }}>
       <SvgWidget svg={L.svg} style={{ height: 'match_parent', width: 'match_parent' }} clickAction="OPEN_URI" clickActionData={{ uri: 'notita://libretas/importantes' }} />
 
-      {L.empty ? (
-        <FlexWidget style={{ height: 'match_parent', width: 'match_parent', justifyContent: 'center', alignItems: 'center', ...pad(L.empty) }}>
-          <TextWidget text={EMPTY_IMPORTANT} style={{ fontSize: 21, fontFamily: 'Caveat-Bold', color: hex('#8A7F74'), textAlign: 'center' }} />
-        </FlexWidget>
-      ) : null}
-
-      {first && L.label ? (
+      {first && L.label && design.showHeader ? (
         <FlexWidget style={{ height: 'match_parent', width: 'match_parent', ...pad(L.label) }}>
           <TextWidget text={L.label.w < 70 ? first.shortLabel : first.label} maxLines={1} truncate="END" style={{ fontSize: 10, fontWeight: '700', color: hex(alpha(first.ink, 0.6)) }} />
         </FlexWidget>
@@ -54,9 +50,9 @@ export function SpikeWidget({ state, width, height }: Props) {
             style={{ height: 'match_parent', width: 'match_parent', flexDirection: 'column' }}>
             <TextWidget
               text={first.title}
-              maxLines={large ? 7 : 2}
+              maxLines={spikeTitleLines(width, height, L.front.h, titleSize)}
               truncate="END"
-              style={{ fontSize: titleSize, fontFamily: 'Caveat-Bold', color: hex(first.ink), lineHeight: titleSize * 1.02 }}
+              style={{ fontSize: titleSize, fontFamily: font.bold ?? undefined, fontWeight: font.bold ? undefined : '700', color: hex(first.ink), lineHeight: Math.round(titleSize * 1.06) }}
             />
           </FlexWidget>
         </FlexWidget>
@@ -67,7 +63,7 @@ export function SpikeWidget({ state, width, height }: Props) {
           <FlexWidget clickAction="COMPLETE" clickActionData={{ id: first.id }} style={{ width: L.check.w + 8, height: L.check.h, justifyContent: 'center' }}>
             <FlexWidget style={{ width: L.check.w, height: L.check.h, borderRadius: L.check.w / 2, borderWidth: 1.8, borderColor: hex(alpha(first.ink, 0.65)) }} />
           </FlexWidget>
-          {first.when ? (
+          {design.showTime && first.when ? (
             <FlexWidget style={{ height: L.check.h, justifyContent: 'center' }}>
               <TextWidget text={first.when} style={{ fontSize: 12, fontWeight: '600', color: hex(first.overdue ? '#C2413A' : alpha(first.ink, 0.7)) }} />
             </FlexWidget>

@@ -4,14 +4,15 @@ import { SvgXml } from 'react-native-svg';
 
 import { useNow } from '@/hooks/use-now';
 import { festiveArt } from '@/lib/festive-art';
-import { anniversaryItems, EMPTY_ANNIVERSARIES, EMPTY_IMPORTANT, importantItems } from '@/lib/special-widgets';
-import { spikeArt } from '@/lib/spike-art';
+import { anniversaryItems, EMPTY_ANNIVERSARIES, importantItems, type ImportantItem } from '@/lib/special-widgets';
+import { spikeArt, spikeTitleLines, spikeTitleSize } from '@/lib/spike-art';
 import { useStore } from '@/store';
-import { alpha } from '@/theme/palette';
+import type { WidgetDesign } from '@/store/types';
+import { FONTS, fontStyle } from '@/theme/fonts';
+import { alpha, INKS, paperFor, type PastelKey } from '@/theme/palette';
 
 import { WIDGET_SIZES, type WidgetSize } from './postit-preview';
 
-const HAND = { fontFamily: 'Caveat-Bold' };
 const FESTIVE_INK = '#4A2F45';
 
 type Props = { size?: WidgetSize; scale?: number; /** Medidas propias (p. ej. la tarjeta del calendario). */ width?: number; height?: number };
@@ -85,40 +86,56 @@ export function AnniversaryWidgetPreview({ size = 'small', scale = 1, width, hei
   );
 }
 
-/** Vista previa del widget «Importantes»: la torre de pósits clavados en la aguja. */
-export function SpikeWidgetPreview({ size = 'small', scale = 1 }: Props) {
+const SAMPLE: { title: string; label: string; color: PastelKey; when: string }[] = [
+  { title: 'Llamar al médico', label: '★ Personal', color: 'limon', when: 'mañ. 10:00' },
+  { title: 'Entregar el informe', label: '★ Trabajo', color: 'cielo', when: 'vie' },
+  { title: 'Comprar el regalo', label: '★ Compras', color: 'menta', when: 'sáb' },
+  { title: 'Pedir cita', label: '★ Salud', color: 'rosa', when: '' },
+];
+
+/** Pósits de ejemplo para ver el diseño cuando todavía no hay importantes. */
+export function sampleItems(design: Pick<WidgetDesign, 'color' | 'ink'>): ImportantItem[] {
+  return SAMPLE.map((x, i) => {
+    const p = paperFor(design.color === 'auto' ? x.color : design.color);
+    return { id: `muestra-${i}`, title: x.title, label: x.label, shortLabel: x.label.slice(0, 1), when: x.when, overdue: false, paper: p.paper, fold: p.fold, line: p.line, strong: p.strong, ink: INKS[design.ink].color ?? p.ink };
+  });
+}
+
+/**
+ * Vista previa del widget «Importantes» con un diseño: la torre de pósits clavados en la aguja.
+ * Con `sample`, si no hay importantes se ven pósits de ejemplo (para elegir el diseño).
+ */
+export function SpikeWidgetPreview({ design, size = 'small', scale = 1, sample = false }: Props & { design: WidgetDesign; sample?: boolean }) {
   const reminders = useStore((s) => s.reminders);
   const notebooks = useStore((s) => s.notebooks);
   const now = useNow();
   const { w, h } = WIDGET_SIZES[size];
-  const items = useMemo(() => importantItems({ reminders, notebooks }, now), [reminders, notebooks, now]);
-  const L = useMemo(() => spikeArt(w, h, items), [w, h, items]);
+  const items = useMemo(() => {
+    const real = importantItems({ reminders, notebooks }, design, now);
+    return real.length || !sample ? real : sampleItems(design);
+  }, [reminders, notebooks, design, now, sample]);
+  const titleSize = spikeTitleSize(w, h, FONTS[design.font].scale);
+  const L = useMemo(() => spikeArt(w, h, items, design, { titleSize }), [w, h, items, design, titleSize]);
   const first = items[0];
-  const titleSize = size === 'large' ? 28 : size === 'medium' ? 22 : 19;
 
   return (
     <Frame w={w} h={h} scale={scale}>
       <SvgXml xml={L.svg} width={w} height={h} />
-      {L.empty ? (
-        <View style={{ position: 'absolute', left: L.empty.x, top: L.empty.y, width: L.empty.w, height: L.empty.h, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={[HAND, { fontSize: 21, textAlign: 'center', color: '#8A7F74', lineHeight: 22 }]}>{EMPTY_IMPORTANT}</Text>
-        </View>
-      ) : null}
       {first && L.front && L.check ? (
         <>
-          {L.label ? (
+          {L.label && design.showHeader ? (
             <Text numberOfLines={1} style={{ position: 'absolute', left: L.label.x, top: L.label.y, width: L.label.w, fontSize: 10, fontWeight: '700', color: alpha(first.ink, 0.6) }}>
               {L.label.w < 70 ? first.shortLabel : first.label}
             </Text>
           ) : null}
           <View style={{ position: 'absolute', left: L.front.x, top: L.front.y, width: L.front.w, height: L.front.h, overflow: 'hidden' }}>
-            <Text numberOfLines={size === 'large' ? 7 : 2} style={[HAND, { fontSize: titleSize, lineHeight: titleSize * 1.02, color: first.ink }]}>
+            <Text numberOfLines={spikeTitleLines(w, h, L.front.h, titleSize)} style={[fontStyle(design.font, 'bold'), { fontSize: titleSize, lineHeight: Math.round(titleSize * 1.06), color: first.ink }]}>
               {first.title}
             </Text>
           </View>
           <View style={{ position: 'absolute', left: L.check.x, top: L.check.y, height: L.check.h, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View style={{ width: L.check.w, height: L.check.h, borderRadius: L.check.w / 2, borderWidth: 1.8, borderColor: alpha(first.ink, 0.65) }} />
-            {first.when ? <Text style={{ fontSize: 12, fontWeight: '600', color: first.overdue ? '#C2413A' : alpha(first.ink, 0.7) }}>{first.when}</Text> : null}
+            {design.showTime && first.when ? <Text style={{ fontSize: 12, fontWeight: '600', color: first.overdue ? '#C2413A' : alpha(first.ink, 0.7) }}>{first.when}</Text> : null}
           </View>
         </>
       ) : null}

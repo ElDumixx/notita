@@ -2,7 +2,7 @@
   "expo": {
     "name": "Notita",
     "slug": "notita",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "orientation": "default",
     "icon": "./assets/icons/ios/original.png",
     "scheme": "notita",
@@ -23,7 +23,7 @@
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "4"
+      "buildNumber": "5"
     },
     "android": {
       "package": "com.paulbumb.notita",
@@ -40,7 +40,7 @@
       ],
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
-      "versionCode": 4
+      "versionCode": 5
     },
     "web": {
       "favicon": "./assets/images/favicon.png",
@@ -150,6 +150,7 @@
               "maxResizeWidth": "520dp",
               "maxResizeHeight": "520dp",
               "resizeMode": "horizontal|vertical",
+              "widgetFeatures": "reconfigurable",
               "previewImage": "./assets/images/widget-importantes.png",
               "updatePeriodMillis": 1800000
             }

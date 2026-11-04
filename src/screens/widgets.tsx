@@ -13,7 +13,7 @@ import { ScreenTitle } from '@/components/screen-title';
 import { cellWidth, READABLE_WIDTH, useResponsive } from '@/hooks/use-responsive';
 import { canPinWidget, pinWidget } from '@/lib/pin-widget';
 import { useStore } from '@/store';
-import type { WidgetDesign } from '@/store/types';
+import type { WidgetDesign, WidgetKind } from '@/store/types';
 import { RADIUS, useTheme } from '@/theme';
 import { ENTER, LAYOUT } from '@/theme/motion';
 
@@ -38,10 +38,45 @@ const STEPS =
 const GAP = 14;
 
 /** Widgets con diseño propio (no se personalizan): nombre del widget de Android incluido. */
-const SPECIAL = [
-  { name: 'Aniversarios', desc: 'Cuenta atrás para cumpleaños y aniversarios, con globos y confeti.', Preview: AnniversaryWidgetPreview },
-  { name: 'Importantes', desc: 'Tus importantes clavados en una aguja: al hacer uno, sale y aparece el siguiente.', Preview: SpikeWidgetPreview },
-];
+const SPECIAL = [{ name: 'Aniversarios', desc: 'Cuenta atrás para cumpleaños y aniversarios, con globos y confeti.', Preview: AnniversaryWidgetPreview }];
+
+/** Rejilla de diseños de un tipo (pósits o agujas), con la casilla para crear uno nuevo al final. */
+function DesignGrid({ kind, designs, columns, cell, scale }: { kind: WidgetKind; designs: WidgetDesign[]; columns: number; cell: number; scale: number }) {
+  const theme = useTheme();
+  const rows: (WidgetDesign | 'new')[][] = [];
+  const cells: (WidgetDesign | 'new')[] = [...designs, 'new'];
+  for (let i = 0; i < cells.length; i += columns) rows.push(cells.slice(i, i + columns));
+  return (
+    <View style={{ gap: 18 }}>
+      {rows.map((row, i) => (
+        <Animated.View key={i} entering={ENTER} layout={LAYOUT} style={{ flexDirection: 'row', gap: GAP }}>
+          {row.map((d) =>
+            d === 'new' ? (
+              <PressableScale
+                key="new"
+                accessibilityRole="button"
+                onPress={() => router.push(kind === 'aguja' ? '/design/new?kind=aguja' : '/design/new')}
+                style={{ width: cell, height: cell, borderRadius: RADIUS.lg, borderCurve: 'continuous', borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textTertiary, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <Icon name="add" size={22} color={theme.textSecondary} />
+                <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>{kind === 'aguja' ? 'Nueva aguja' : 'Nuevo diseño'}</Text>
+              </PressableScale>
+            ) : (
+              <PressableScale key={d.id} accessibilityRole="button" accessibilityLabel={`Editar ${d.name}`} onPress={() => router.push(`/design/${d.id}`)} style={{ width: cell, gap: 8 }}>
+                {kind === 'aguja' ? <SpikeWidgetPreview design={d} size="small" scale={scale} sample /> : <PostitPreview design={d} size="small" scale={scale} />}
+                <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '600', color: theme.text, textAlign: 'center' }}>
+                  {d.name}
+                </Text>
+              </PressableScale>
+            )
+          )}
+          {Array.from({ length: columns - row.length }, (_, k) => (
+            <View key={`empty-${k}`} style={{ width: cell }} />
+          ))}
+        </Animated.View>
+      ))}
+    </View>
+  );
+}
 
 export function WidgetsScreen() {
   const theme = useTheme();
@@ -52,9 +87,8 @@ export function WidgetsScreen() {
   const cell = cellWidth(layout.inner, columns, GAP);
   const scale = cell / WIDGET_SIZES.small.w;
 
-  const rows: (WidgetDesign | 'new')[][] = [];
-  const cells: (WidgetDesign | 'new')[] = [...designs, 'new'];
-  for (let i = 0; i < cells.length; i += columns) rows.push(cells.slice(i, i + columns));
+  const postits = designs.filter((d) => d.kind === 'postit');
+  const spikes = designs.filter((d) => d.kind === 'aguja');
 
   return (
     <>
@@ -66,40 +100,13 @@ export function WidgetsScreen() {
         <ScreenTitle title="Widgets" />
         <View style={{ maxWidth: READABLE_WIDTH }}>
           <Text style={{ fontSize: 15, color: theme.textSecondary, paddingHorizontal: TEXT_INSET, lineHeight: 21 }}>
-            Diseña tus pósits para la pantalla de inicio: fondo, forma, papel, color y tipo de letra.
+            Diseña tus pósits y la aguja de importantes para la pantalla de inicio: fondo, forma, papel, color y tipo de letra.
           </Text>
         </View>
 
         <View>
           <SectionTitle>Tus pósits</SectionTitle>
-          <View style={{ gap: 18 }}>
-          {rows.map((row, i) => (
-            <Animated.View key={i} entering={ENTER} layout={LAYOUT} style={{ flexDirection: 'row', gap: GAP }}>
-              {row.map((d) =>
-                d === 'new' ? (
-                  <PressableScale
-                    key="new"
-                    accessibilityRole="button"
-                    onPress={() => router.push('/design/new')}
-                    style={{ width: cell, height: cell, borderRadius: RADIUS.lg, borderCurve: 'continuous', borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textTertiary, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                    <Icon name="add" size={22} color={theme.textSecondary} />
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: theme.textSecondary }}>Nuevo diseño</Text>
-                  </PressableScale>
-                ) : (
-                  <PressableScale key={d.id} accessibilityRole="button" accessibilityLabel={`Editar ${d.name}`} onPress={() => router.push(`/design/${d.id}`)} style={{ width: cell, gap: 8 }}>
-                    <PostitPreview design={d} size="small" scale={scale} />
-                    <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '600', color: theme.text, textAlign: 'center' }}>
-                      {d.name}
-                    </Text>
-                  </PressableScale>
-                )
-              )}
-              {Array.from({ length: columns - row.length }, (_, k) => (
-                <View key={`empty-${k}`} style={{ width: cell }} />
-              ))}
-            </Animated.View>
-          ))}
-          </View>
+          <DesignGrid kind="postit" designs={postits} columns={columns} cell={cell} scale={scale} />
         </View>
 
         {canPinWidget ? (
@@ -109,7 +116,21 @@ export function WidgetsScreen() {
         ) : null}
 
         <View>
-          <SectionTitle>Widgets especiales</SectionTitle>
+          <SectionTitle>Aguja de importantes</SectionTitle>
+          <Text style={{ fontSize: 14, lineHeight: 20, color: theme.textSecondary, paddingHorizontal: TEXT_INSET, marginBottom: 12, maxWidth: READABLE_WIDTH }}>
+            Tus importantes clavados en una aguja, cada uno con el color de su libreta. Al hacer uno, sale y aparece el siguiente.
+          </Text>
+          <DesignGrid kind="aguja" designs={spikes} columns={columns} cell={cell} scale={scale} />
+        </View>
+
+        {canPinWidget ? (
+          <View style={{ maxWidth: READABLE_WIDTH }}>
+            <Button icon="add" kind="soft" title="Añadir la aguja a la pantalla de inicio" onPress={() => pinWidget('Importantes')} />
+          </View>
+        ) : null}
+
+        <View>
+          <SectionTitle>Más widgets</SectionTitle>
           <View style={{ flexDirection: 'row', gap: GAP }}>
             {SPECIAL.map(({ name, desc, Preview }) => (
               <PressableScale

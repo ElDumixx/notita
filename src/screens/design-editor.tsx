@@ -6,6 +6,7 @@ import Animated from 'react-native-reanimated';
 import { SvgXml } from 'react-native-svg';
 
 import { PostitPreview, WIDGET_SIZES, type WidgetSize } from '@/components/postit-preview';
+import { sampleItems, SpikeWidgetPreview } from '@/components/special-widget-previews';
 import { PressableScale } from '@/components/pressable-scale';
 import { useCardFill } from '@/components/glass';
 import { GlassBackdrop } from '@/components/glass-backdrop';
@@ -15,9 +16,10 @@ import { SHEET_MAX_WIDTH, useResponsive } from '@/hooks/use-responsive';
 import { showAlert } from '@/lib/alert';
 import { haptic } from '@/lib/haptics';
 import { layoutPostit, resolveColors } from '@/lib/postit-art';
+import { spikeArt } from '@/lib/spike-art';
 import { useStore } from '@/store';
-import { makeDesign } from '@/store/seed';
-import type { PaperPattern, PostitShape, WidgetBoard, WidgetDesign, WidgetSource } from '@/store/types';
+import { makeDesign, makeSpikeDesign } from '@/store/seed';
+import type { PaperPattern, PostitShape, WidgetBoard, WidgetDesign, WidgetKind, WidgetSource } from '@/store/types';
 import { RADIUS, useTheme } from '@/theme';
 import { ENTER } from '@/theme/motion';
 import { FONT_KEYS, FONTS, fontStyle } from '@/theme/fonts';
@@ -30,6 +32,13 @@ const BOARDS: { key: WidgetBoard; label: string }[] = [
   { key: 'cristal', label: 'Cristal' },
   { key: 'oscuro', label: 'Oscuro' },
 ];
+// La aguja no tiene «pósit a todo el widget»: el fondo blanco es una mesa.
+const SPIKE_BOARDS: { key: WidgetBoard; label: string }[] = [
+  { key: 'blanco', label: 'Mesa' },
+  { key: 'pastel', label: 'Pastel' },
+  { key: 'cristal', label: 'Cristal' },
+  { key: 'oscuro', label: 'Oscuro' },
+];
 const SHAPES: { key: PostitShape; label: string }[] = [
   { key: 'clasico', label: 'Clásico' },
   { key: 'doblado', label: 'Doblado' },
@@ -37,6 +46,8 @@ const SHAPES: { key: PostitShape; label: string }[] = [
   { key: 'rasgado', label: 'Rasgado' },
   { key: 'redondo', label: 'Redondo' },
 ];
+// En una aguja no hay cinta adhesiva.
+const SPIKE_SHAPES = SHAPES.filter((s) => s.key !== 'cinta');
 const PAPERS: { key: PaperPattern; label: string }[] = [
   { key: 'liso', label: 'Liso' },
   { key: 'rayas', label: 'Rayas' },
@@ -94,7 +105,13 @@ function MiniArt({ design, notebooks, size = 46 }: { design: WidgetDesign; noteb
   return <SvgXml xml={xml} width={size} height={size} />;
 }
 
-export function DesignEditor({ id }: { id: string }) {
+// Miniatura de la aguja: se dibuja a 120 puntos (lo mínimo para que se lea) y se reduce.
+function MiniSpike({ design, size = 46 }: { design: WidgetDesign; size?: number }) {
+  const xml = useMemo(() => spikeArt(120, 120, sampleItems(design).slice(0, 3), design, { radius: 14, titleSize: 13 }).svg, [design]);
+  return <SvgXml xml={xml} width={size} height={size} />;
+}
+
+export function DesignEditor({ id, kind = 'postit' }: { id: string; kind?: WidgetKind }) {
   const theme = useTheme();
   const card = useCardFill();
   const layout = useResponsive();
@@ -106,7 +123,12 @@ export function DesignEditor({ id }: { id: string }) {
   const updateDesign = useStore((s) => s.updateDesign);
   const deleteDesign = useStore((s) => s.deleteDesign);
 
-  const [draft, setDraft] = useState<WidgetDesign>(() => existing ?? makeDesign({ name: `Pósit ${designs.length + 1}` }));
+  const [draft, setDraft] = useState<WidgetDesign>(() => {
+    if (existing) return existing;
+    const count = designs.filter((d) => d.kind === kind).length + 1;
+    return kind === 'aguja' ? makeSpikeDesign({ name: `Aguja ${count}` }) : makeDesign({ name: `Pósit ${count}` });
+  });
+  const spike = draft.kind === 'aguja';
   const [size, setSize] = useState<WidgetSize>('small');
   const set = (patch: Partial<WidgetDesign>) => setDraft((d) => ({ ...d, ...patch }));
 
@@ -124,7 +146,7 @@ export function DesignEditor({ id }: { id: string }) {
   const scale = Math.min(1.25, maxPreview / w, 260 / h);
 
   const save = () => {
-    const clean = { ...draft, name: draft.name.trim() || 'Mi pósit' };
+    const clean = { ...draft, name: draft.name.trim() || (spike ? 'Mi aguja' : 'Mi pósit') };
     if (isNew) addDesign(clean);
     else updateDesign(id, clean);
     haptic.success();
@@ -151,7 +173,7 @@ export function DesignEditor({ id }: { id: string }) {
     <View style={{ flex: 1 }}>
       <GlassBackdrop radius={28} />
       <View collapsable={false}>
-        <SheetHeader title={isNew ? 'Nuevo diseño' : 'Diseño del widget'} onCancel={() => router.back()} onSave={save} />
+        <SheetHeader title={isNew ? (spike ? 'Nueva aguja' : 'Nuevo diseño') : spike ? 'Diseño de la aguja' : 'Diseño del widget'} onCancel={() => router.back()} onSave={save} />
       </View>
       <ScrollView
         onLayout={layout.onLayout}
@@ -161,7 +183,7 @@ export function DesignEditor({ id }: { id: string }) {
         <View style={{ gap: 14 }}>
           <View style={{ height: 270, borderRadius: RADIUS.xl, borderCurve: 'continuous', backgroundColor: theme.scheme === 'dark' ? '#1A1918' : '#EFEBE5', alignItems: 'center', justifyContent: 'center' }}>
             <Animated.View key={size} entering={ENTER}>
-              <PostitPreview design={draft} size={size} scale={scale} />
+              {spike ? <SpikeWidgetPreview design={draft} size={size} scale={scale} sample /> : <PostitPreview design={draft} size={size} scale={scale} />}
             </Animated.View>
           </View>
           <Segmented options={(Object.keys(WIDGET_SIZES) as WidgetSize[]).map((k) => ({ key: k, label: WIDGET_SIZES[k].label }))} value={size} onChange={setSize} />
@@ -172,29 +194,35 @@ export function DesignEditor({ id }: { id: string }) {
           <TextInput
             value={draft.name}
             onChangeText={(name) => set({ name })}
-            placeholder="Mi pósit"
+            placeholder={spike ? 'Mi aguja' : 'Mi pósit'}
             placeholderTextColor={theme.textTertiary}
             style={{ fontSize: 16, color: theme.text, backgroundColor: card, borderRadius: RADIUS.md, borderCurve: 'continuous', paddingHorizontal: 14, paddingVertical: 12 }}
           />
         </View>
 
-        <View>
-          <FieldLabel>Qué muestra</FieldLabel>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {sources.map((s) => (
-              <Chip key={s.key} label={s.label} selected={draft.source === s.key} onPress={() => set({ source: s.key })} />
-            ))}
+        {spike ? (
+          <Text style={{ fontSize: 14, lineHeight: 20, color: theme.textSecondary, marginTop: -8 }}>
+            Muestra tus recordatorios importantes. Con el color «Libreta», cada pósit lleva el color de su libreta.
+          </Text>
+        ) : (
+          <View>
+            <FieldLabel>Qué muestra</FieldLabel>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {sources.map((s) => (
+                <Chip key={s.key} label={s.label} selected={draft.source === s.key} onPress={() => set({ source: s.key })} />
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         <View>
           <FieldLabel>Fondo</FieldLabel>
           <OptionRow
-            items={BOARDS}
-            columns={5}
+            items={spike ? SPIKE_BOARDS : BOARDS}
+            columns={spike ? 4 : 5}
             render={(b) => (
               <Tile selected={draft.board === b.key} label={b.label} onPress={() => set({ board: b.key })}>
-                <MiniArt design={{ ...draft, board: b.key }} notebooks={notebooks} />
+                {spike ? <MiniSpike design={{ ...draft, board: b.key }} size={58} /> : <MiniArt design={{ ...draft, board: b.key }} notebooks={notebooks} />}
               </Tile>
             )}
           />
@@ -219,11 +247,15 @@ export function DesignEditor({ id }: { id: string }) {
         <View>
           <FieldLabel>Forma del pósit</FieldLabel>
           <OptionRow
-            items={SHAPES}
-            columns={5}
+            items={spike ? SPIKE_SHAPES : SHAPES}
+            columns={spike ? 4 : 5}
             render={(s) => (
               <Tile selected={draft.shape === s.key} label={s.label} onPress={() => set({ shape: s.key })}>
-                <MiniArt design={{ ...draft, shape: s.key, board: 'blanco', paper: 'liso' }} notebooks={notebooks} />
+                {spike ? (
+                  <MiniSpike design={{ ...draft, shape: s.key, board: 'blanco', paper: 'liso' }} size={58} />
+                ) : (
+                  <MiniArt design={{ ...draft, shape: s.key, board: 'blanco', paper: 'liso' }} notebooks={notebooks} />
+                )}
               </Tile>
             )}
           />
@@ -236,7 +268,11 @@ export function DesignEditor({ id }: { id: string }) {
             columns={4}
             render={(p) => (
               <Tile selected={draft.paper === p.key} label={p.label} onPress={() => set({ paper: p.key })}>
-                <MiniArt design={{ ...draft, paper: p.key, board: 'completo', shape: 'clasico' }} notebooks={notebooks} size={58} />
+                {spike ? (
+                  <MiniSpike design={{ ...draft, paper: p.key, board: 'blanco', shape: 'clasico' }} size={58} />
+                ) : (
+                  <MiniArt design={{ ...draft, paper: p.key, board: 'completo', shape: 'clasico' }} notebooks={notebooks} size={58} />
+                )}
               </Tile>
             )}
           />
@@ -292,17 +328,17 @@ export function DesignEditor({ id }: { id: string }) {
 
         <View style={{ backgroundColor: card, borderRadius: RADIUS.lg, borderCurve: 'continuous', paddingHorizontal: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}>
-            <Text style={{ flex: 1, fontSize: 16, color: theme.text }}>Mostrar título</Text>
+            <Text style={{ flex: 1, fontSize: 16, color: theme.text }}>{spike ? 'Mostrar libreta' : 'Mostrar título'}</Text>
             <Switch value={draft.showHeader} onValueChange={(showHeader) => set({ showHeader })} trackColor={{ true: theme.tint }} {...SWITCH_WEB} />
           </View>
           <View style={{ height: 1, backgroundColor: theme.separator }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}>
-            <Text style={{ flex: 1, fontSize: 16, color: theme.text }}>Mostrar hora</Text>
+            <Text style={{ flex: 1, fontSize: 16, color: theme.text }}>{spike ? 'Mostrar fecha' : 'Mostrar hora'}</Text>
             <Switch value={draft.showTime} onValueChange={(showTime) => set({ showTime })} trackColor={{ true: theme.tint }} {...SWITCH_WEB} />
           </View>
         </View>
 
-        {!isNew && designs.length > 1 ? <Button kind="danger" icon="trash" title="Eliminar diseño" onPress={remove} /> : null}
+        {!isNew && designs.filter((d) => d.kind === draft.kind).length > 1 ? <Button kind="danger" icon="trash" title="Eliminar diseño" onPress={remove} /> : null}
       </ScrollView>
     </View>
   );

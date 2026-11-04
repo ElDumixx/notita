@@ -22,6 +22,8 @@ struct SNotebook: Codable {
   var paper: String?
   var fold: String?
   var ink: String?
+  var line: String?
+  var strong: String?
 }
 
 struct SAnniversary: Codable, Identifiable {
@@ -62,8 +64,18 @@ struct SColors: Codable {
   var boardOpacity: Double
 }
 
+/// Fondo del widget de la aguja (degradado de arriba abajo).
+struct SSpikeBoard: Codable {
+  var top: String
+  var bottom: String
+  var opacity: Double
+  var dark: Bool
+}
+
 struct SDesign: Codable {
   var id: String
+  /// "postit" o "aguja" (las instantáneas antiguas no lo traen: pósit).
+  var kind: String?
   var name: String
   var source: String
   var title: String
@@ -74,6 +86,12 @@ struct SDesign: Codable {
   var showHeader: Bool
   var font: SFont
   var colors: SColors
+  /// Color elegido ("auto" = el de la libreta), tinta fija (nil = a juego) y fondo de la aguja.
+  var color: String?
+  var inkColor: String?
+  var spikeBoard: SSpikeBoard?
+
+  var isSpike: Bool { kind == "aguja" }
 }
 
 extension SDesign {

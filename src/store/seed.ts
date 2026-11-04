@@ -2,7 +2,7 @@ import { addDays, atTime, startOfDay } from '@/lib/dates';
 import { newId } from '@/lib/ids';
 import type { PastelKey } from '@/theme/palette';
 
-import type { Notebook, NotebookKind, Reminder, Settings, WidgetDesign } from './types';
+import type { Notebook, NotebookKind, Reminder, Settings, WidgetDesign, WidgetKind } from './types';
 
 export const NOTEBOOK_TEMPLATES: Record<NotebookKind, { name: string; emoji: string; color: PastelKey }> = {
   personal: { name: 'Personal', emoji: '🌼', color: 'limon' },
@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export function makeDesign(partial: Partial<WidgetDesign> = {}): WidgetDesign {
   return {
     id: newId('w'),
+    kind: 'postit',
     name: 'Pósit clásico',
     source: 'hoy',
     board: 'blanco',
@@ -52,6 +53,16 @@ export function makeDesign(partial: Partial<WidgetDesign> = {}): WidgetDesign {
     createdAt: Date.now(),
     ...partial,
   };
+}
+
+/** Diseño de la aguja de importantes: cada pósit con el color de su libreta. */
+export function makeSpikeDesign(partial: Partial<WidgetDesign> = {}): WidgetDesign {
+  return makeDesign({ kind: 'aguja', name: 'Aguja clásica', source: 'importantes', board: 'blanco', shape: 'doblado', paper: 'liso', color: 'auto', font: 'mano', ...partial });
+}
+
+/** Diseño por defecto de cada tipo. */
+export function defaultDesign(kind: WidgetKind) {
+  return kind === 'aguja' ? makeSpikeDesign() : makeDesign();
 }
 
 export function makeReminder(partial: Partial<Reminder> & { notebookId: string; title: string }): Reminder {
@@ -97,6 +108,6 @@ export function seedData() {
   return {
     notebooks: [personal, trabajo, compras],
     reminders,
-    designs: [makeDesign()],
+    designs: [makeDesign(), makeSpikeDesign()],
   };
 }

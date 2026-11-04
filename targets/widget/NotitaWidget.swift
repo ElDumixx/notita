@@ -13,8 +13,10 @@ struct DesignEntity: AppEntity {
 }
 
 struct DesignQuery: EntityQuery {
+  // Solo los pósits: las agujas se eligen en el widget «Importantes».
   private func all() -> [DesignEntity] {
-    (SharedStore.load()?.designs ?? [SDesign.fallback]).map { DesignEntity(id: $0.id, name: $0.name) }
+    let designs = (SharedStore.load()?.designs ?? []).filter { !$0.isSpike }
+    return (designs.isEmpty ? [SDesign.fallback] : designs).map { DesignEntity(id: $0.id, name: $0.name) }
   }
   func entities(for identifiers: [String]) async throws -> [DesignEntity] { all().filter { identifiers.contains($0.id) } }
   func suggestedEntities() async throws -> [DesignEntity] { all() }
@@ -67,7 +69,7 @@ struct Provider: AppIntentTimelineProvider {
 
   private func entry(for configuration: SelectDesignIntent, at date: Date) -> PostitEntry {
     let snap = SharedStore.load()
-    let designs = snap?.designs ?? []
+    let designs = (snap?.designs ?? []).filter { !$0.isSpike }
     let design = designs.first { $0.id == configuration.design?.id } ?? designs.first ?? .fallback
     return PostitEntry(date: date, design: design, snapshot: snap)
   }

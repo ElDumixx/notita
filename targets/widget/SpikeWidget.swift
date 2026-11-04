@@ -3,8 +3,48 @@ import SwiftUI
 import WidgetKit
 
 // Widget «Importantes»: pósits clavados en una aguja (pincho de notas). El de delante es el
-// recordatorio que toca; detrás asoman los siguientes, cada uno girado a su manera. Al marcarlo
-// como hecho sale de la aguja y aparece el siguiente. Misma geometría que src/lib/spike-art.ts.
+// recordatorio que toca; detrás asoman los siguientes, cada uno girado a su manera y con el color
+// de su libreta. Al marcarlo como hecho sale de la aguja y aparece el siguiente; sin importantes
+// queda solo la aguja. El fondo, la forma, el papel, la letra y la tinta salen del diseño elegido.
+// Misma geometría que src/lib/spike-art.ts.
+
+// MARK: - Configuración: el usuario elige uno de sus diseños de aguja
+
+struct SpikeDesignEntity: AppEntity {
+  static var typeDisplayRepresentation: TypeDisplayRepresentation = "Aguja"
+  static var defaultQuery = SpikeDesignQuery()
+  var id: String
+  var name: String
+  var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
+}
+
+struct SpikeDesignQuery: EntityQuery {
+  private func all() -> [SpikeDesignEntity] {
+    let designs = (SharedStore.load()?.designs ?? []).filter(\.isSpike)
+    return (designs.isEmpty ? [SDesign.spikeFallback] : designs).map { SpikeDesignEntity(id: $0.id, name: $0.name) }
+  }
+  func entities(for identifiers: [String]) async throws -> [SpikeDesignEntity] { all().filter { identifiers.contains($0.id) } }
+  func suggestedEntities() async throws -> [SpikeDesignEntity] { all() }
+  func defaultResult() async -> SpikeDesignEntity? { all().first }
+}
+
+struct SelectSpikeIntent: WidgetConfigurationIntent {
+  static var title: LocalizedStringResource = "Elegir aguja"
+  static var description = IntentDescription("Elige qué diseño de aguja muestra este widget.")
+  @Parameter(title: "Aguja") var design: SpikeDesignEntity?
+}
+
+extension SDesign {
+  static let spikeFallback = SDesign(
+    id: "aguja", kind: "aguja", name: "Aguja clásica", source: "importantes", title: "Importantes", board: "blanco", shape: "doblado", paper: "liso",
+    showTime: true, showHeader: true,
+    font: SFont(key: "mano", regular: "Caveat-Medium", bold: "Caveat-Bold", scale: 1.28),
+    colors: SColors(paper: "#FFF1A8", ink: "#5B4A0E", line: "#EAD27C", fold: "#F3D97A", strong: "#EFC94C", board: "#FFFFFF", boardOpacity: 1),
+    color: "auto"
+  )
+}
+
+// MARK: - Geometría y colores
 
 struct SpikeMetrics {
   let cx: CGFloat, x0: CGFloat, y0: CGFloat, pw: CGFloat, ph: CGFloat, step: CGFloat
@@ -17,12 +57,16 @@ struct SpikeMetrics {
     x0 = pad
     y0 = 17
     pw = w - pad * 2
-    step = 7
-    ph = h - 17 - 3 * 7 - 32
+    step = 9
+    ph = h - 17 - 3 * 9 - 32
     baseY = h - 13
     baseRX = min(48, max(26, w * 0.16))
     baseRY = 7
   }
+}
+
+struct SpikeNoteColors {
+  let paper: String, fold: String, line: String, ink: String
 }
 
 enum SpikeLogic {
@@ -35,7 +79,7 @@ enum SpikeLogic {
   /// Giro de cada pósit de detrás: distinto para cada recordatorio y alternando el lado.
   static func tilt(_ id: String, _ index: Int) -> Double {
     var r = SeededRandom(seed: hash(id))
-    let deg = 2.5 + Double(r.next()) * 4.5
+    let deg = 3 + Double(r.next()) * 4.5
     return index % 2 == 1 ? -deg : deg
   }
 
@@ -49,15 +93,37 @@ enum SpikeLogic {
     (snap?.reminders ?? []).filter { $0.important }.sorted(by: ReminderLogic.byDue)
   }
 
-  static func colors(_ r: SReminder, _ snap: Snapshot?) -> (paper: Color, fold: Color, ink: Color) {
+  /// Con el color «Libreta» cada pósit lleva el de su libreta; si no, todos el del diseño.
+  static func colors(_ r: SReminder, _ snap: Snapshot?, _ d: SDesign) -> SpikeNoteColors {
+    if let fixed = d.color, fixed != "auto" {
+      return SpikeNoteColors(paper: d.colors.paper, fold: d.colors.fold, line: d.colors.line, ink: d.colors.ink)
+    }
     let nb = snap?.notebooks.first { $0.id == r.notebookId }
-    return (Color(hex: nb?.paper ?? "#FFF1A8"), Color(hex: nb?.fold ?? "#F3D97A"), Color(hex: nb?.ink ?? "#5B4A0E"))
+    return SpikeNoteColors(paper: nb?.paper ?? "#FFF1A8", fold: nb?.fold ?? "#F3D97A", line: nb?.line ?? "#EAD27C", ink: d.inkColor ?? nb?.ink ?? "#5B4A0E")
   }
 
   /// "★ Trabajo", o "★ 💼" si no cabe el nombre de la libreta.
   static func label(_ r: SReminder, _ snap: Snapshot?, short: Bool) -> String {
     guard let nb = snap?.notebooks.first(where: { $0.id == r.notebookId }) else { return short ? "★" : "★ Importante" }
     return short ? "★ \(nb.emoji)" : "★ \(nb.name)"
+  }
+
+  /// Esquinas, pliegue y borde rasgado según la forma del diseño.
+  static func shape(_ d: SDesign, _ m: SpikeMetrics) -> (radius: CGFloat, fold: CGFloat, tear: CGFloat) {
+    let side = min(m.pw, m.ph)
+    return (d.shape == "redondo" ? (side * 0.09).rounded() : 3, d.shape == "doblado" ? (side * 0.16).rounded() : 0, d.shape == "rasgado" ? 3.5 : 0)
+  }
+
+  /// Tamaño del título (la letra «A mano» es pequeña: las demás se reducen).
+  static func titleSize(_ s: CGSize, _ d: SDesign) -> CGFloat {
+    let wide = s.width > s.height * 1.5
+    let large = !wide && s.width > 250 && s.height > 250
+    let base: CGFloat = large ? 28 : (wide ? 22 : 19)
+    return (base * CGFloat(d.font.scale) / 1.28).rounded()
+  }
+
+  static func board(_ d: SDesign) -> SSpikeBoard {
+    d.spikeBoard ?? SSpikeBoard(top: "#FBF8F3", bottom: "#F0E8DC", opacity: 1, dark: false)
   }
 }
 
@@ -69,6 +135,8 @@ struct SpikeBackdrop: View {
   let back: [(id: String, paper: Color)]
   let tip: CGFloat
   let dark: Bool
+  let radius: CGFloat
+  let tear: CGFloat
 
   var body: some View {
     Canvas { ctx, _ in
@@ -94,12 +162,48 @@ struct SpikeBackdrop: View {
         c.rotate(by: .degrees(SpikeLogic.tilt(n.id, i)))
         c.translateBy(x: -pierce.x, y: -pierce.y)
         let rect = CGRect(x: m.cx - bw / 2, y: y, width: bw, height: m.ph)
-        c.fill(Path(roundedRect: rect.offsetBy(dx: 0, dy: 1.8), cornerRadius: 3), with: .color(.black.opacity(0.07)))
-        c.fill(Path(roundedRect: rect.offsetBy(dx: 0, dy: 0.7), cornerRadius: 3), with: .color(.black.opacity(0.05)))
-        c.fill(Path(roundedRect: rect, cornerRadius: 3), with: .color(n.paper))
-        c.fill(Path(roundedRect: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: min(15, m.ph * 0.13)), cornerRadius: 3), with: .color(.black.opacity(0.035)))
+        let outline = PostitShape(radius: radius, fold: 0, tear: tear)
+        c.fill(outline.path(in: rect.offsetBy(dx: 0, dy: 1.8)), with: .color(.black.opacity(0.07)))
+        c.fill(outline.path(in: rect.offsetBy(dx: 0, dy: 0.7)), with: .color(.black.opacity(0.05)))
+        c.fill(outline.path(in: rect), with: .color(n.paper))
+        c.fill(Path(roundedRect: CGRect(x: rect.minX, y: rect.minY + tear, width: rect.width, height: min(15, m.ph * 0.13)), cornerRadius: min(3, radius)), with: .color(.black.opacity(0.035)))
         c.fill(Path(ellipseIn: CGRect(x: pierce.x - 3.6, y: pierce.y - 3.6, width: 7.2, height: 7.2)), with: .color(.black.opacity(0.08)))
         c.fill(Path(ellipseIn: CGRect(x: pierce.x - 2.2, y: pierce.y - 2.2, width: 4.4, height: 4.4)), with: .color(Color(hex: "#3B3632").opacity(0.6)))
+      }
+    }
+  }
+}
+
+/// Renglones, cuadros o puntos del papel del pósit de delante.
+struct SpikePaperPattern: View {
+  let paper: String
+  let line: Color
+  let gap: CGFloat
+
+  var body: some View {
+    Canvas { ctx, size in
+      let w = size.width, h = size.height
+      func stroke(_ a: CGPoint, _ b: CGPoint, _ color: Color, _ width: CGFloat) {
+        var p = Path(); p.move(to: a); p.addLine(to: b); ctx.stroke(p, with: .color(color), lineWidth: width)
+      }
+      switch paper {
+      case "rayas":
+        var y = 17 + gap
+        while y < h - 4 { stroke(CGPoint(x: 0, y: y), CGPoint(x: w, y: y), line, 1); y += gap }
+      case "cuadricula":
+        var x: CGFloat = 9
+        while x < w { stroke(CGPoint(x: x, y: 0), CGPoint(x: x, y: h), line.opacity(0.7), 0.7); x += 9 }
+        var y: CGFloat = 9
+        while y < h { stroke(CGPoint(x: 0, y: y), CGPoint(x: w, y: y), line.opacity(0.7), 0.7); y += 9 }
+      case "puntos":
+        var x: CGFloat = 5
+        while x < w {
+          var y: CGFloat = 5
+          while y < h { ctx.fill(Path(ellipseIn: CGRect(x: x - 1, y: y - 1, width: 2, height: 2)), with: .color(line)); y += 10 }
+          x += 10
+        }
+      default:
+        break
       }
     }
   }
@@ -108,7 +212,8 @@ struct SpikeBackdrop: View {
 /// El pósit de delante, recto para que se lea, con el círculo para marcarlo como hecho.
 struct FrontPost: View {
   let reminder: SReminder
-  let colors: (paper: Color, fold: Color, ink: Color)
+  let design: SDesign
+  let colors: SpikeNoteColors
   let label: String
   let when: String
   let overdue: Bool
@@ -116,45 +221,58 @@ struct FrontPost: View {
   let titleSize: CGFloat
   let lines: Int
 
+  private func titleFont() -> Font {
+    design.font.bold.isEmpty ? .system(size: titleSize, weight: .bold) : .custom(design.font.bold, size: titleSize)
+  }
+
   var body: some View {
-    let f = (min(m.pw, m.ph) * 0.16).rounded()
-    let shape = PostitShape(radius: 3, fold: f, tear: 0)
+    let s = SpikeLogic.shape(design, m)
+    let shape = PostitShape(radius: s.radius, fold: s.fold, tear: s.tear)
+    let ink = Color(hex: colors.ink)
     ZStack(alignment: .topLeading) {
       shape.fill(Color.black.opacity(0.07)).offset(y: 1.8)
       shape.fill(Color.black.opacity(0.05)).offset(y: 0.7)
-      shape.fill(colors.paper)
-      UnevenRoundedRectangle(topLeadingRadius: 3, topTrailingRadius: 3).fill(Color.black.opacity(0.035)).frame(height: min(15, m.ph * 0.13))
-      Path { p in
-        let fx = m.pw - f, fy = m.ph - f
-        p.move(to: CGPoint(x: fx, y: m.ph))
-        p.addLine(to: CGPoint(x: m.pw, y: fy))
-        p.addLine(to: CGPoint(x: fx + f * 0.08, y: fy))
-        p.addQuadCurve(to: CGPoint(x: fx, y: fy + f * 0.08), control: CGPoint(x: fx, y: fy))
-        p.closeSubpath()
+      shape.fill(Color(hex: colors.paper))
+      if design.paper != "liso" {
+        SpikePaperPattern(paper: design.paper, line: Color(hex: colors.line), gap: (titleSize * 1.06 * 10).rounded() / 10).clipShape(shape)
       }
-      .fill(colors.fold)
+      UnevenRoundedRectangle(topLeadingRadius: min(3, s.radius), topTrailingRadius: min(3, s.radius)).fill(Color.black.opacity(0.035))
+        .frame(height: min(15, m.ph * 0.13)).offset(y: s.tear)
+      if s.fold > 0 {
+        Path { p in
+          let f = s.fold, fx = m.pw - f, fy = m.ph - f
+          p.move(to: CGPoint(x: fx, y: m.ph))
+          p.addLine(to: CGPoint(x: m.pw, y: fy))
+          p.addLine(to: CGPoint(x: fx + f * 0.08, y: fy))
+          p.addQuadCurve(to: CGPoint(x: fx, y: fy + f * 0.08), control: CGPoint(x: fx, y: fy))
+          p.closeSubpath()
+        }
+        .fill(Color(hex: colors.fold))
+      }
       Circle().fill(Color.black.opacity(0.08)).frame(width: 7.2, height: 7.2).offset(x: m.pw / 2 - 3.6, y: 10 - 3.6)
       Circle().fill(Color(hex: "#3B3632").opacity(0.6)).frame(width: 4.4, height: 4.4).offset(x: m.pw / 2 - 2.2, y: 10 - 2.2)
 
       // Etiqueta en la franja adhesiva, a la izquierda de la aguja
-      Text(label).font(.system(size: 10, weight: .bold)).foregroundStyle(colors.ink.opacity(0.6)).lineLimit(1)
-        .frame(width: max(0, m.pw / 2 - 20), height: 13, alignment: .leading)
-        .offset(x: 12, y: 2)
+      if design.showHeader {
+        Text(label).font(.system(size: 10, weight: .bold)).foregroundStyle(ink.opacity(0.6)).lineLimit(1)
+          .frame(width: max(0, m.pw / 2 - 20), height: 13, alignment: .leading)
+          .offset(x: 12, y: 2 + s.tear)
+      }
 
-      Text(reminder.title).font(.custom("Caveat-Bold", size: titleSize)).foregroundStyle(colors.ink).lineLimit(lines)
-        .frame(width: m.pw - 24, height: max(0, m.ph - 8 - 20 - 3 - 17), alignment: .topLeading)
-        .offset(x: 12, y: 17)
+      Text(reminder.title).font(titleFont()).foregroundStyle(ink).lineLimit(lines).lineSpacing(0)
+        .frame(width: m.pw - 24, height: max(0, m.ph - 8 - 20 - 3 - 17 - s.tear), alignment: .topLeading)
+        .offset(x: 12, y: 17 + s.tear)
 
       HStack(spacing: 8) {
         Button(intent: CompleteReminderIntent(reminderId: reminder.id)) {
           Circle()
-            .strokeBorder(colors.ink.opacity(0.65), lineWidth: 1.8)
+            .strokeBorder(ink.opacity(0.65), lineWidth: 1.8)
             .frame(width: 20, height: 20)
             .contentShape(Circle().inset(by: -8))
         }
         .buttonStyle(.plain)
-        if !when.isEmpty {
-          Text(when).font(.system(size: 12, weight: .semibold)).foregroundStyle(overdue ? Color(hex: "#C2413A") : colors.ink.opacity(0.7))
+        if design.showTime && !when.isEmpty {
+          Text(when).font(.system(size: 12, weight: .semibold)).foregroundStyle(overdue ? Color(hex: "#C2413A") : ink.opacity(0.7))
         }
       }
       .offset(x: 12, y: m.ph - 8 - 20)
@@ -167,21 +285,28 @@ struct FrontPost: View {
 
 struct SpikeEntry: TimelineEntry {
   let date: Date
+  let design: SDesign
   let snapshot: Snapshot?
 }
 
-struct SpikeProvider: TimelineProvider {
-  func placeholder(in context: Context) -> SpikeEntry { SpikeEntry(date: .now, snapshot: nil) }
+struct SpikeProvider: AppIntentTimelineProvider {
+  func placeholder(in context: Context) -> SpikeEntry { SpikeEntry(date: .now, design: .spikeFallback, snapshot: nil) }
 
-  func getSnapshot(in context: Context, completion: @escaping (SpikeEntry) -> Void) {
-    completion(SpikeEntry(date: .now, snapshot: SharedStore.load()))
+  func snapshot(for configuration: SelectSpikeIntent, in context: Context) async -> SpikeEntry {
+    entry(for: configuration, at: .now)
   }
 
-  func getTimeline(in context: Context, completion: @escaping (Timeline<SpikeEntry>) -> Void) {
+  func timeline(for configuration: SelectSpikeIntent, in context: Context) async -> Timeline<SpikeEntry> {
     let now = Date.now
     let midnight = Calendar.current.startOfDay(for: now).addingTimeInterval(86_400 + 30)
+    return Timeline(entries: [entry(for: configuration, at: now), entry(for: configuration, at: midnight)], policy: .after(midnight))
+  }
+
+  private func entry(for configuration: SelectSpikeIntent, at date: Date) -> SpikeEntry {
     let snap = SharedStore.load()
-    completion(Timeline(entries: [SpikeEntry(date: now, snapshot: snap), SpikeEntry(date: midnight, snapshot: snap)], policy: .after(midnight)))
+    let designs = (snap?.designs ?? []).filter(\.isSpike)
+    let design = designs.first { $0.id == configuration.design?.id } ?? designs.first ?? .spikeFallback
+    return SpikeEntry(date: date, design: design, snapshot: snap)
   }
 }
 
@@ -190,10 +315,11 @@ struct SpikeProvider: TimelineProvider {
 struct SpikeEntryView: View {
   let entry: SpikeEntry
   @Environment(\.widgetFamily) private var family
-  @Environment(\.colorScheme) private var scheme
 
   var body: some View {
     let items = SpikeLogic.items(entry.snapshot)
+    let design = entry.design
+    let board = SpikeLogic.board(design)
     switch family {
     case .accessoryRectangular:
       VStack(alignment: .leading, spacing: 1) {
@@ -210,32 +336,25 @@ struct SpikeEntryView: View {
     default:
       GeometryReader { geo in
         let m = SpikeMetrics(geo.size)
-        let empty = items.isEmpty
-        let tip: CGFloat = empty ? (geo.size.height * 0.44).rounded() : 6
-        let back = items.dropFirst().prefix(3).map { (id: $0.id, paper: SpikeLogic.colors($0, entry.snapshot).paper) }
+        // Sin importantes queda solo la aguja, entera.
+        let tip: CGFloat = items.isEmpty ? (geo.size.height * 0.12).rounded() : 6
+        let back = items.dropFirst().prefix(3).map { (id: $0.id, paper: Color(hex: SpikeLogic.colors($0, entry.snapshot, design).paper)) }
         let wide = geo.size.width > geo.size.height * 1.5
         let large = !wide && geo.size.width > 250 && geo.size.height > 250
+        let s = SpikeLogic.shape(design, m)
         ZStack(alignment: .topLeading) {
-          SpikeBackdrop(m: m, back: back, tip: tip, dark: scheme == .dark)
-
-          if empty {
-            Text("No hay recordatorios importantes")
-              .font(.custom("Caveat-Bold", size: 21))
-              .foregroundStyle(Color(hex: "#8A7F74"))
-              .multilineTextAlignment(.center)
-              .frame(width: geo.size.width - 28, height: max(0, tip - 14))
-              .offset(x: 14, y: 10)
-          }
+          SpikeBackdrop(m: m, back: back, tip: tip, dark: board.dark, radius: s.radius, tear: s.tear)
 
           if let r = items.first {
             FrontPost(
               reminder: r,
-              colors: SpikeLogic.colors(r, entry.snapshot),
+              design: design,
+              colors: SpikeLogic.colors(r, entry.snapshot, design),
               label: SpikeLogic.label(r, entry.snapshot, short: m.pw / 2 - 20 < 70),
               when: ReminderLogic.when(r, now: entry.date),
               overdue: ReminderLogic.isOverdue(r, now: entry.date),
               m: m,
-              titleSize: large ? 28 : (wide ? 22 : 19),
+              titleSize: SpikeLogic.titleSize(geo.size, design),
               lines: large ? 7 : 2
             )
             .offset(x: m.x0, y: m.y0)
@@ -263,7 +382,7 @@ struct SpikeEntryView: View {
         .animation(.spring(duration: 0.45), value: items.first?.id)
       }
       .containerBackground(for: .widget) {
-        LinearGradient(colors: scheme == .dark ? [Color(hex: "#2C2926"), Color(hex: "#1E1C1A")] : [Color(hex: "#FBF8F3"), Color(hex: "#F0E8DC")], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [Color(hex: board.top, opacity: board.opacity), Color(hex: board.bottom, opacity: board.opacity)], startPoint: .top, endPoint: .bottom)
       }
       .widgetURL(URL(string: items.first.map { "notita://reminder/\($0.id)" } ?? "notita://libretas/importantes"))
     }
@@ -274,11 +393,11 @@ struct SpikeWidget: Widget {
   let kind = "NotitaImportantes"
 
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: kind, provider: SpikeProvider()) { entry in
+    AppIntentConfiguration(kind: kind, intent: SelectSpikeIntent.self, provider: SpikeProvider()) { entry in
       SpikeEntryView(entry: entry)
     }
     .configurationDisplayName("Importantes")
-    .description("Tus recordatorios importantes clavados en una aguja. Márcalo como hecho y aparece el siguiente.")
+    .description("Tus recordatorios importantes clavados en una aguja. Mantén pulsado para elegir el diseño.")
     .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular])
     .contentMarginsDisabled()
   }

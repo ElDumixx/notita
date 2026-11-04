@@ -2,10 +2,11 @@ import type { State } from '@/store';
 import { isPending, remindersForSource } from '@/store/selectors';
 import type { WidgetDesign } from '@/store/types';
 import { FONTS } from '@/theme/fonts';
-import { PASTELS } from '@/theme/palette';
+import { INKS, PASTELS } from '@/theme/palette';
 
 import { dayDiff, formatTime } from './dates';
 import { resolveColors, sourceTitle } from './postit-art';
+import { spikeBoard } from './spike-art';
 
 const DAYS_SHORT = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
@@ -42,9 +43,12 @@ export function emptyMessage(design: WidgetDesign) {
 /** Instantánea compartida con el widget de iOS (App Group). */
 export function buildSnapshot(state: Pick<State, 'reminders' | 'notebooks' | 'designs' | 'anniversaries'>) {
   return {
-    version: 2,
+    version: 3,
     generatedAt: Date.now(),
-    notebooks: state.notebooks.map((n) => ({ id: n.id, name: n.name, emoji: n.emoji, paper: PASTELS[n.color].paper, fold: PASTELS[n.color].fold, ink: PASTELS[n.color].ink })),
+    notebooks: state.notebooks.map((n) => {
+      const p = PASTELS[n.color];
+      return { id: n.id, name: n.name, emoji: n.emoji, paper: p.paper, fold: p.fold, ink: p.ink, line: p.line, strong: p.strong };
+    }),
     // El widget de iOS calcula él mismo cuánto falta (así acierta aunque no se abra la app).
     anniversaries: state.anniversaries.map((a) => ({ id: a.id, kind: a.kind, name: a.name, month: a.month, day: a.day, year: a.year, emoji: a.emoji })),
     reminders: state.reminders
@@ -64,8 +68,13 @@ export function buildSnapshot(state: Pick<State, 'reminders' | 'notebooks' | 'de
       const f = FONTS[d.font];
       return {
         id: d.id,
+        kind: d.kind,
         name: d.name,
         source: d.source,
+        // Aguja: «auto» = cada pósit con el color de su libreta; si no, todos con `colors`.
+        color: d.color,
+        inkColor: INKS[d.ink].color,
+        spikeBoard: d.kind === 'aguja' ? spikeBoard(d) : null,
         title: sourceTitle(d.source, state.notebooks),
         board: d.board,
         shape: d.shape,

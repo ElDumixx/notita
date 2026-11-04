@@ -42,8 +42,12 @@ export type WidgetBoard = 'completo' | 'blanco' | 'pastel' | 'cristal' | 'oscuro
 export type PostitShape = 'clasico' | 'doblado' | 'cinta' | 'rasgado' | 'redondo';
 export type PaperPattern = 'liso' | 'rayas' | 'cuadricula' | 'puntos';
 
+/** Pósit con una lista de recordatorios, o la aguja de los importantes. */
+export type WidgetKind = 'postit' | 'aguja';
+
 export type WidgetDesign = {
   id: string;
+  kind: WidgetKind;
   name: string;
   source: WidgetSource;
   board: WidgetBoard;

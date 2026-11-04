@@ -4,11 +4,19 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { MIN, nextOccurrence } from '@/lib/dates';
 import { newId } from '@/lib/ids';
 
-import { DEFAULT_SETTINGS, makeDesign, makeReminder, seedData } from './seed';
+import { DEFAULT_SETTINGS, defaultDesign, makeDesign, makeReminder, seedData } from './seed';
 import { kv } from './storage';
-import type { Anniversary, Notebook, Reminder, Settings, Trash, WidgetDesign } from './types';
+import type { Anniversary, Notebook, Reminder, Settings, Trash, WidgetDesign, WidgetKind } from './types';
 
 export const STORE_KEY = 'notita-store';
+
+const KINDS: WidgetKind[] = ['postit', 'aguja'];
+
+/** Siempre queda al menos un diseño de cada tipo (pósit y aguja). */
+function withEveryKind(designs: WidgetDesign[]) {
+  const missing = KINDS.filter((k) => !designs.some((d) => d.kind === k));
+  return missing.length ? [...designs, ...missing.map(defaultDesign)] : designs;
+}
 
 type Data = {
   notebooks: Notebook[];
@@ -189,8 +197,7 @@ export const useStore = create<State>()(
 
       deleteDesign: (id) =>
         set((s) => {
-          const designs = s.designs.filter((d) => d.id !== id);
-          return { designs: designs.length ? designs : [makeDesign()] };
+          return { designs: withEveryKind(s.designs.filter((d) => d.id !== id)) };
         }),
 
       bindWidget: (widgetId, designId) =>
@@ -223,7 +230,7 @@ export const useStore = create<State>()(
         return {
           ...current,
           ...p,
-          designs: (p.designs ?? current.designs).map((d) => ({ ...d, glass: d.glass ?? 0.6 })),
+          designs: withEveryKind((p.designs ?? current.designs).map((d) => ({ ...d, glass: d.glass ?? 0.6, kind: d.kind ?? 'postit' }))),
           anniversaries: p.anniversaries ?? [],
           settings: { ...DEFAULT_SETTINGS, ...p.settings },
         };
